@@ -15,10 +15,10 @@
 npx skills add D3c3453d/andrej-karpathy-skills
 ```
 
-**Claude Code plugin** (run inside Claude Code)
+**Claude Code plugin** (from a terminal)
 
-```
-/plugin install karpathy-skills --marketplace D3c3453d/andrej-karpathy-skills
+```bash
+claude plugin install karpathy-skills --marketplace D3c3453d/andrej-karpathy-skills
 ```
 
 </div>
