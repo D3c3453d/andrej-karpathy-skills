@@ -110,7 +110,7 @@ npm ls --all                     # Node dependency tree
 ```
 
 - Prefer `pip-audit -r [file]`. A bare `pip-audit` audits the Python environment it runs in, which may not be the project's.
-- `pip-audit -r` resolves dependencies, which can run package build code. On a fully pinned file add `--no-deps`.
+- `pip-audit -r` uses pip to resolve the file, which can run package build code. On a fully pinned file add `--no-deps --disable-pip`: pip is then not used at all, and only the listed versions are checked.
 - `npm audit fix` rewrites the lock file. Run it only with the user's approval and show them the diff.
 - Report what you find. Do not pin, upgrade or rewrite anything unless the user asks.
 
