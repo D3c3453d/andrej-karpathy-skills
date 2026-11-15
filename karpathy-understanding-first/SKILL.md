@@ -1,6 +1,6 @@
 ---
 name: karpathy-understanding-first
-description: 'Apply the Karpathy understanding-first principle — verify what AI built, own your understanding, map the jagged capability landscape of LLMs. Use this skill when the user has used AI to build something and needs to verify it, wants to audit their own understanding, needs to know where LLMs are reliable vs unreliable, or says "verify this", "do I actually understand this", "what can I trust the AI on", "jagged capabilities", "understanding not outsourcing". Based on 46k-like quote post.'
+description: 'After AI-assisted work, make explicit what was assumed, what was actually verified, and what the human must inspect personally, so that understanding is not lost along with the typing. Use this skill when the user has used AI to build something and needs to verify it, wants to audit their own understanding, needs to know where LLM output is reliable, or says "verify this", "do I actually understand this", "what can I trust the AI on", "jagged capabilities", "understanding not outsourcing".'
 disable-model-invocation: false
 user-invocable: true
 related_skills:
@@ -10,158 +10,107 @@ related_skills:
   - karpathy-practice-environments
 ---
 
-# Skill 8: Understanding > Outsourcing（理解 > 外包）
+# Understanding First
 
-> Source: https://x.com/karpathy/status/2049907410303865030
-> "You can outsource your thinking but you cannot outsource your understanding." — 46k likes
-> Also: Jagged Capabilities Modeling (Sequoia conversation)
+Handing work to an AI is fine. Losing track of what was built, and why, is not. After AI-assisted work, state what was assumed, what was actually verified, and what the human needs to look at personally.
 
-## Core Principle
+**How to use this skill:** You, the agent, carry out the steps below yourself. Text in `[BRACKETS]` is a placeholder: fill it from the conversation or the project, and ask the user for any required value you cannot find. Do not hand a template back to the user unless they ask for a prompt to use elsewhere. Where a step names another `karpathy-*` skill, load it by name or read `../[skill-name]/SKILL.md`; if it is not installed, say so and ask, and do not improvise its procedure.
 
-**Outsourcing is fine. Atrophy is not.**
+## When to use
 
-Use AI to go 10x faster. But every time you skip understanding something, you're borrowing from your own future. Understanding compounds. Blindly shipping agent output does not.
+- An agent produced work that the user is about to rely on or ship.
+- The user asks whether the work can be trusted, or whether they really understand it.
+- A decision rests on assumptions that have not been separated from facts.
+- In a monthly review: finding recent AI-assisted work the user cannot explain.
 
-Karpathy's "jagged capabilities" insight: LLMs are **wildly good** at some things (verifiable, high-data domains) and **silently wrong** at others (off-distribution, novel combinations). You need a mental map of which is which.
+## When not to use
 
-## The Understanding Audit
+- Trivial, low-stakes output.
+- The user asked for the artefact only. Still flag, in one line, any unverified assumption that would be costly if wrong.
 
-After every agent-assisted work session, run this:
+## Inputs
 
-```
-I just had an AI help me [DESCRIBE WHAT WAS BUILT/WRITTEN/DECIDED].
+- **The work product**: a diff, a document, a decision, or a To verify list from `karpathy-llm-simulator` (required).
+- **What it will be used for**, and what it costs if it is wrong.
+- **The user's level** in the subject, if they will be audited on it.
 
-Help me audit my own understanding:
+## Procedure
 
-1. List the 5 key decisions that were made (technical choices, assumptions, trade-offs)
-2. For each decision: would I be able to explain WHY this choice was made to a colleague?
-   Mark each: UNDERSTOOD / SHALLOW / BLACK BOX
-3. For the BLACK BOX items: give me a 3-sentence explanation I can verify
-4. What would I need to read/learn to make the SHALLOW items UNDERSTOOD?
+### 1. Write the understanding report
 
-Be honest. If I'm shipping something I don't understand, I need to know.
-```
-
-## Jagged Capabilities Map
-
-LLMs are NOT uniformly capable. Use this mental model:
-
-### HIGH Reliability (on the rails)
-These are well-defined, verifiable, data-rich domains:
-- Code in popular languages (Python, JS, SQL)
-- Text summarization and rewriting
-- Structured data extraction
-- Well-known algorithms
-- Common patterns (REST APIs, SQL queries, regex)
-
-### MEDIUM Reliability (use carefully, verify)
-- Less popular languages (Rust, Haskell, Elixir)
-- Integrating multiple systems together
-- Anything involving specific versions/APIs after training cutoff
-- Multi-step reasoning chains
-- Math beyond simple arithmetic
-
-### LOW Reliability (always verify independently)
-- Cutting-edge research (may hallucinate papers)
-- Novel combinations of technologies
-- Domain-specific knowledge you can't easily verify
-- Legal/medical/financial specifics
-- Anything where being wrong is expensive
-
-## The Capability Check Prompt
-
-Before trusting an AI output on something important:
-
-```
-I need to evaluate how reliable your output is for this specific task:
-
-Task type: [DESCRIBE WHAT YOU ASKED THE AI]
-Output: [PASTE THE OUTPUT]
-
-Help me assess:
-1. How common is this exact pattern in training data? (ubiquitous / common / rare / novel)
-2. What's the easiest way to verify this without running it?
-3. What's the most likely error — hallucinated API? Wrong logic? Outdated syntax?
-4. What search query would I use to double-check the key claim?
-5. Should I trust this output? (YES/VERIFY_FIRST/DEFINITELY_CHECK)
-```
-
-## The Anti-Atrophy Protocol
-
-Karpathy tracks which skills are atrophying (taken over by AI) and which are growing. Monthly check:
-
-```
-Run a skills audit for [MONTH/YEAR]:
-
-Things I've been having AI do for me recently:
-[LIST 5-10 TASKS]
-
-For each:
-1. Is my ability to do this WITHOUT AI declining? (YES / NO / UNSURE)
-2. Is that OK? (Critical skill I must maintain / Commodity I'm fine outsourcing)
-3. Action: KEEP_DELEGATING / PRACTICE_MANUALLY / LEARN_DEEPLY
-
-Final question: What's one thing I should deliberately do WITHOUT AI this month to stay sharp?
-```
-
-## The Verification Checklist
-
-Before shipping any agent-produced output:
+Put this report in your reply. Do not write it into the user's files unless asked.
 
 ```markdown
-Understanding verification:
-- [ ] I can explain what this does in plain English without looking at it
-- [ ] I've traced through the logic manually for at least one example
-- [ ] I know what the failure mode looks like
-- [ ] I've run it / tested it myself (not just read the output)
-- [ ] If it's wrong, I'll know how to debug it
-- [ ] I'm not shipping something I'd be embarrassed to explain in a code review
-
-If any box is unchecked: understand it before shipping.
+## Understanding report
+- Key assumptions: [each assumption the work depends on]
+- Verified: [claim] - [evidence: test output, command result, document reference]
+- Not verified: [claim] - [how to check it]
+- Reliability notes: [the parts where model output is least trustworthy here, and why]
+- Look at this yourself: [file and lines, setting, or number] - [what to look for]
 ```
 
-## The Learning Extraction Prompt
+Rules:
 
-When AI writes something you don't understand — learn from it, don't just ship it:
+- For each claim, first try to check it with the tools you have: run it, read the source, fetch the primary document. What you could not check goes under Not verified.
+- List under Verified only what was checked in this session, with the evidence. Rereading your own output and finding it plausible is not verification.
+- Verify outside the model: run it, test it, compare it with the documentation, or go to the primary source. A model's statement of its own confidence does not count.
+- Make `Look at this yourself` specific enough to act on: a file and line range, a configuration key, a figure.
 
+### 2. Judge where model output is least reliable
+
+These tiers are this repository's heuristics, not measurements:
+
+| Reliability | Typical cases | What to do |
+|---|---|---|
+| Higher | Widely used languages and frameworks; standard algorithms; summarising or extracting from text that is provided | Verify by running or spot-checking |
+| Lower | Library versions and APIs newer than the model's training; glue between several systems; long chains of reasoning; arithmetic done without a tool | Verify every part that matters |
+| Lowest | Citations and references (they may be invented); niche or novel domains; legal, medical or financial specifics; anything costly if wrong | Confirm against an independent source |
+
+### 3. Audit the user's understanding (when asked)
+
+1. List the three to five key decisions in the work: technical choices, assumptions, trade-offs.
+2. Ask the user to explain each in their own words, or to mark each as `can explain`, `shallow` or `black box`. Do not rate them yourself without asking.
+3. For each `shallow` or `black box` item give a three-sentence explanation and one thing the user can check to confirm it.
+4. For code the user wants to learn from: walk through the logic, say what would happen if a given part changed, and show a smaller version of the core idea.
+
+### 4. Before shipping
+
+Offer this checklist to the user:
+
+```markdown
+- [ ] I can say what this does in plain language without looking at it.
+- [ ] I traced one example through it by hand.
+- [ ] I know what a failure would look like.
+- [ ] I ran it myself.
+- [ ] If it breaks, I know where I would start debugging.
 ```
-You wrote this code/text and I don't fully understand it:
 
-[PASTE OUTPUT]
+Any unchecked box means there is more to understand before shipping.
 
-Teach me:
-1. The underlying concept (assume I know [MY_LEVEL] — beginner/intermediate/expert)
-2. Walk through the logic step by step
-3. What would happen if I changed [SPECIFIC PART]?
-4. Point me to the canonical resource where I can learn this properly
-5. Give me a simpler version that demonstrates the core idea in isolation
+## Output
 
-I'm going to use this as a learning moment, not just copy-paste.
-```
+The understanding report. If an audit was requested, also the list of decisions with the user's own rating of each and the explanations given.
+
+## Done when
+
+- [ ] Key assumptions are listed explicitly, not left implicit in the work.
+- [ ] Every item under Verified has evidence from this session.
+- [ ] Every item under Not verified has a way to check it.
+- [ ] The least reliable parts are named.
+- [ ] `Look at this yourself` points to specific files, lines, settings or figures.
+- [ ] If an audit was run, the ratings came from the user. When only the audit was requested, the report items above do not apply.
 
 ## Workflow
 
-**属于工作流：反偏见决策（第2步）+ 工作流：月度体检（第2步）**
+Step 2 of two workflows.
 
-| 位置 | 上游 | 下游 |
-|------|------|------|
-| C第2步 | karpathy-llm-simulator（辩论后） | karpathy-system-prompt-learning（沉淀规则） |
-| D第2步 | karpathy-meta-reflection（审计后） | karpathy-practice-environments（建练习环境） |
+- **Debiased Decision:** it takes the To verify list from `karpathy-llm-simulator`, checks what it can, and reports. `karpathy-system-prompt-learning` follows only if the user has decided and wants a reusable rule.
+- **Monthly Check-up:** it takes the skills marked KEEP SHARP by `karpathy-meta-reflection`. Ask the user for one or two recent AI-assisted pieces of work for each, and run only step 3 on them. The weakest area is the skill with the most `black box` ratings; pass it to `karpathy-practice-environments`. If the user has no work to show, say so and move on.
 
-反偏见决策链路：llm-simulator → understanding-first → system-prompt-learning
-月度体检链路：meta-reflection → understanding-first → practice-environments → education-first
+## Source
 
-## Prompt Contract
+- "you can outsource your thinking but you cannot outsource your understanding" was written by @yacineMTB. Karpathy reposted it on 2026-04-30 as "the quote I've been citing a lot recently". https://x.com/karpathy/status/2049907410303865030
+- On why model ability is jagged, Karpathy wrote the same day that it depends on how verifiable a domain is and on what the labs choose to train on, an explanation he calls unfinished: "You're either in the data distribution (on the rails of the RL circuits) and flying or you're off-roading in the jungle with a machete". https://x.com/karpathy/status/2049903821095354523
+- On review as a separate skill, 2026-01-26: "Generation (writing code) and discrimination (reading code) are different capabilities in the brain." https://x.com/karpathy/status/2015883857489522876
 
-```text
-After completing this task, append an Understanding Report: 1) Key assumptions made (list each), 2) What was verified (with evidence), 3) What remains inferred/unverified (with suggested verification method), 4) Capability boundary notes (where LLM might be off-distribution for this task), 5) Items I must personally inspect or understand before relying on this output.
-```
-
-## Verification Checklist
-
-- [ ] 关键假设被明确列出（不藏在输出里）
-- [ ] 已验证项有证据（测试通过/文档引用/数据对比）
-- [ ] 未验证项有明确的验证方法建议
-- [ ] LLM 能力边界有标注（哪些部分它可能不擅长）
-- [ ] 「你必须亲自看」清单具体到文件/行/配置
-- [ ] 人类确认已理解核心逻辑（不只是看了一眼）
+The procedure, templates and thresholds here are this repository's elaboration.

@@ -1,6 +1,6 @@
 ---
 name: karpathy-agentic-engineering
-description: 'Apply Karpathy-style agentic engineering to any coding or building task. Use this skill when the user wants to set up an agent-driven workflow, needs to write a CLAUDE.md or AGENTS.md, wants to orchestrate agents with clear success criteria, or says things like "agent loop", "let the agent handle it", "agentic coding", "set up agent workflow". Includes the 7-step inner loop from Karpathy claude coding notes.'
+description: 'Apply Karpathy-style agentic engineering to a coding or building task: agree success criteria, discuss approaches before code, change one thing at a time and verify it. Use this skill when the user wants to build or change code they care about with an agent, needs to write a CLAUDE.md or AGENTS.md, wants an agent workflow with clear success criteria, or says things like "agent loop", "let the agent handle it", "agentic coding", "set up agent workflow".'
 disable-model-invocation: false
 user-invocable: true
 related_skills:
@@ -11,118 +11,106 @@ related_skills:
   - karpathy-understanding-first
 ---
 
-# Skill 1: Agentic Engineering（代理工程）
+# Agentic Engineering
 
-> Source: https://x.com/karpathy/status/2004607146781278521 | https://x.com/karpathy/status/2015883857489522876 | https://x.com/karpathy/status/2026731645169185220
-> "It is hard to communicate how much programming has changed." — ~37k likes
+Build software by working in small, verified increments: agree what done means, discuss approaches before writing code, change one thing, prove it works, then move on. The human supplies direction, taste and review. The agent supplies execution and verification.
 
-## Core Principle
+**How to use this skill:** You, the agent, carry out the steps below yourself. Text in `[BRACKETS]` is a placeholder: fill it from the conversation or the project, and ask the user for any required value you cannot find. Do not hand a template back to the user unless they ask for a prompt to use elsewhere. Where a step names another `karpathy-*` skill, load it by name or read `../[skill-name]/SKILL.md`; if it is not installed, say so and ask, and do not improvise its procedure.
 
-You are no longer writing code. You are **directing a team of tireless junior engineers**.
+## When to use
 
-The shift: `write code` → `write tasks with success criteria` → `agent loops` → `human taste review`
+- A coding task whose result the user intends to keep.
+- Setting up a project to be worked on with an agent, including writing `CLAUDE.md` or `AGENTS.md`.
+- Debugging, where each hypothesis can be tested.
 
-## The 7-Step Inner Loop (Karpathy's Incremental Coding Rhythm)
+## When not to use
 
-This is the micro-loop for every coding session:
+- A throwaway prototype or exploration. Just build it; use `karpathy-vibe-to-agentic` later if it needs to last.
+- A trivial edit. Make the change and say what you did.
+- A decision that is not about code. Use `karpathy-llm-simulator`.
 
-1. **Stuff context** — Load entire project into context (`files-to-prompt`, relevant docs, recent diffs)
-2. **Discuss plan** — Ask agent for high-level approaches with pros/cons before any code
-3. **Request first draft** — Pick one approach, get a minimal first implementation
-4. **Inline learning** — Manually review the diff; ask agent to explain any API you don't recognize
-5. **Test** — Run tests, check outputs, verify success criteria
-6. **Commit** — Only commit what you understand and have verified
-7. **Ask for next** — Let agent suggest the next incremental step
+## Inputs
 
-**Never skip step 4.** Understanding atrophies if you rubber-stamp every diff.
+- **Task** (required): what should be true when the work is done.
+- **Success criteria** (required): checks that can be run or observed. If the user gave none, propose two to four and get them confirmed before writing code.
+- **Project context**: read the relevant files yourself. Find out how to run the tests and the linter. If there is no test command, say so and agree how each change will be verified.
+- **Constraints**: areas not to touch, and the policy on new dependencies.
 
-## CLAUDE.md / AGENTS.md Template
+## Procedure
 
-Write this file at the project root to prevent the most common agent failure modes:
+Repeat this loop once per increment.
+
+1. **Gather context.** Read everything relevant to the next change: the files it touches, their callers, their tests, recent diffs. Read the whole project only if it is small.
+2. **State the next single increment** and how it will be checked. Turn vague goals into checks: `fix the bug` becomes `a test that reproduces the bug passes`.
+3. **Propose before coding.** Where more than one reasonable approach exists, give two or three with their trade-offs and recommend one; otherwise state the approach. List the assumptions you are making. If the request is ambiguous, or a simpler way exists, say so now. Wait for the user's choice, unless they told you to proceed on your own judgment.
+4. **Implement the smallest version** of the chosen approach. Change only what this increment needs. Where a test can express the check, write the test first. For performance work, write the obviously correct version first, then optimise while the tests keep passing.
+5. **Review.** Show the diff, or a summary if it is long. Explain any API, library call or construct the user may not know. Check each unfamiliar API against the installed version's documentation or source; if you cannot check it, label it UNVERIFIED.
+6. **Verify.** Run the tests, the linter and the success criteria, and report the real output. If something fails, fix it, or reverse your own edits for this increment only and try another approach. Never use `git checkout --`, `git restore`, `git reset --hard` or `git stash` on files that hold uncommitted work. Never weaken a check to make it pass.
+7. **Commit** only if the user asked for commits in this session; otherwise leave the change for them. Then, if every success criterion passes, stop and report; do not start increments outside the task. Otherwise suggest the next increment and return to step 1.
+
+### Failure modes to guard against
+
+Karpathy lists these as the common mistakes of coding agents (2026-01-26).
+
+| Failure | Guard |
+|---|---|
+| Acting on an unstated assumption | List assumptions in step 3; ask when a wrong guess would be costly |
+| Hiding confusion instead of asking | Name what is unclear and ask |
+| Agreeing when pushback is due | Say so when a request looks wrong or a simpler way exists |
+| Over-complicated code and needless abstractions | Write the minimum; no options or layers nobody asked for |
+| Dead code left behind | Remove what your change made unused; mention older dead code, do not delete it |
+| Edits to code or comments unrelated to the task | Every changed line must trace to the current increment |
+
+This repository adds one more guard: never add a dependency without asking, and apply `karpathy-minimalism` and `karpathy-supply-chain-hygiene` first.
+
+### Project instruction file
+
+When asked to set up a project for agent work, put this in the instruction file your host reads at the repository root (`CLAUDE.md` for Claude Code, `AGENTS.md` for most others; ask if unsure), filled in from the project. If the file already exists, read it and propose an added section; never replace it. Instructions reduce the failures above but do not remove them (Karpathy reports they persisted despite his own), so step 5 still applies.
 
 ```markdown
-# Agent Instructions for [Project Name]
+# Agent instructions for [project name]
 
-## Behavior Rules
-- Make one incremental change at a time. Do NOT refactor unrelated code.
-- Always explain WHY you're making a change before the diff.
-- If unsure about intent, ASK before implementing.
-- Do NOT add new dependencies without explicit approval.
-- Prefer simple, readable solutions over clever ones.
+## Rules
+- One incremental change at a time. Do not refactor unrelated code.
+- Before a non-trivial change, state your plan and assumptions.
+- If the intent is unclear, ask before implementing.
+- No new dependencies without approval.
+- Prefer simple, readable solutions.
 
-## Success Criteria (task-specific — fill in per session)
-- [ ] Tests pass: `[test command]`
-- [ ] No new lint errors: `[lint command]`
-- [ ] Behavior matches: [description of expected output]
-
-## Project Context
-- Stack: [language, framework, key libs]
+## Project
+- Stack: [language, framework, key libraries]
 - Entry point: [file]
-- Test command: [command]
-- Forbidden: [list things agent must never do]
+- Run tests: `[command]`
+- Run linter: `[command]`
+- Never: [things the agent must not do]
 ```
 
-## Master Prompt Template
+## Output
 
-```
-You are an agentic engineer on this project.
+After each increment, report:
 
-Project context: [paste relevant files or use files-to-prompt output]
+- **Changed:** each file and one line on what changed.
+- **Verified:** the commands run and their results.
+- **Not verified:** assumptions and anything marked UNVERIFIED.
+- **Next:** the suggested next increment.
 
-Task: [specific, unambiguous description]
+## Done when
 
-Success criteria (ALL must be true when done):
-1. [verifiable check 1]
-2. [verifiable check 2]
-3. [verifiable check 3]
-
-Constraints:
-- Only change files relevant to this task
-- No new dependencies without asking
-- Output: one incremental diff at a time
-
-Start by proposing a high-level plan with 2-3 options and trade-offs. Wait for approval before writing code.
-```
-
-## Common Failure Modes to Prevent
-
-| Agent Sin | Prevention |
-|-----------|-----------|
-| Over-refactoring | "Only touch files directly related to the task" |
-| Sycophantic confirmation | "Tell me what could go wrong with this plan" |
-| Hallucinated APIs | "Cite the exact line in the docs for any API you use" |
-| Dependency creep | "No new pip/npm installs without asking" |
-| No success criteria | Always define DONE before starting |
+- [ ] Success criteria were written as checks before any code.
+- [ ] Every success criterion passes, with its output shown.
+- [ ] Every increment has real verification output, not a claim that it should work.
+- [ ] No file outside the task was changed.
+- [ ] Each diff was shown, and unfamiliar parts were explained.
+- [ ] The whole change can be stated in one sentence: what changed and why.
 
 ## Workflow
 
-**属于工作流：想法到上线（开发者）**
+Step 2 of **Idea to Launch**. It takes the idea file from `karpathy-idea-files` as its task and success criteria, and hands the working code to `karpathy-minimalism`. It also works on its own.
 
-| 位置 | 上游 | 下游 |
-|------|------|------|
-| 第2步 | `karpathy-idea-files`（先定义想法） | `karpathy-minimalism`（极简实现） |
+## Source
 
-完整链路：`idea-files → agentic-engineering → minimalism → supply-chain-hygiene → vibe-to-agentic`
+- The loop is adapted from Karpathy's rhythm for code he professionally cares about, posted 2025-04-25: "Stuff everything relevant into context", describe the next single change, ask for approaches before code, review and learn, test, commit. He stresses "keeping a very tight leash" and being "slow, defensive, careful, paranoid". In his loop the commit is unconditional; making it depend on the user's wishes is this repository's change. https://x.com/karpathy/status/1915581920022585597
+- The failure modes and the advice on leverage are from his notes of 2026-01-26: "Don't tell it what to do, give it success criteria and watch it go." https://x.com/karpathy/status/2015883857489522876
+- On 2026-02-25 he wrote that agents do best on "tasks that are well-specified and where you can verify/test functionality". https://x.com/karpathy/status/2026731645169185220
 
-也常在反偏见决策工作流中作为执行层出现——当决策完成后需要落地时，切换到本 Skill。
-
-## Prompt Contract
-
-```text
-You are an agentic engineer. Project context: <files, constraints, current state>. Task: <specific goal>. Success criteria: <verifiable checklist>. First propose a high-level plan with tradeoffs. Then make only the next incremental change. After each change, run the relevant verification and report: changed files, evidence of success, remaining risk, and next step.
-```
-
-## Verification Checklist
-
-- [ ] 成功标准已经写成可检查项目（不是模糊描述）
-- [ ] 每轮变更都有实际验证证据：测试通过、lint clean、diff 范围正确
-- [ ] Agent 没有修改任务范围外的文件
-- [ ] 人类已 review 每个 diff 中不理解的部分（不跳步）
-- [ ] 最终提交前，能用一句话向同事解释改了什么、为什么
-
-## When to Apply This Skill
-
-- Starting any coding task > 30 minutes
-- Setting up a new project with agent assistance
-- Debugging a complex issue (agent as rubber duck + implementer)
-- Writing CLAUDE.md / AGENTS.md for a repo
+The procedure, templates and thresholds here are this repository's elaboration.

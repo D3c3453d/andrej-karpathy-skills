@@ -1,6 +1,6 @@
 ---
 name: karpathy-llm-simulator
-description: 'Use LLM as a simulator of expert debates and opposing viewpoints instead of getting a single sycophantic answer. Use this skill when the user needs to make an important decision, wants to stress-test an idea, needs devil''s advocate analysis, wants to avoid confirmation bias, or says "argue against this", "what are the counterarguments", "simulate experts", "debate this", "challenge my thinking". Based on Karpathy 31k-like post.'
+description: 'Stress-test a decision, plan or draft by having the model voice several conflicting perspectives instead of giving one agreeable answer. Use this skill when the user needs to make an important decision, wants to stress-test an idea, needs devil''s advocate analysis, wants to avoid confirmation bias, or says "argue against this", "what are the counterarguments", "simulate experts", "debate this", "challenge my thinking".'
 disable-model-invocation: false
 user-invocable: true
 related_skills:
@@ -9,137 +9,105 @@ related_skills:
   - karpathy-meta-reflection
 ---
 
-# Skill 3: LLM as Simulator（LLM模拟器思维）
+# LLM as Simulator
 
-> Source: https://x.com/karpathy/status/2037921699824607591 | https://x.com/karpathy/status/2049907410303865030
-> "Drafted a blog post → LLM argue the opposite" — 31k likes
+A language model has no settled opinion of its own, and it can argue almost any side convincingly. Use that: instead of asking what it thinks, have it voice several conflicting perspectives, then let the user judge the arguments. A persuasive argument from a model is not evidence that the argument is true.
 
-## Core Principle
+**How to use this skill:** You, the agent, carry out the steps below yourself. Text in `[BRACKETS]` is a placeholder: fill it from the conversation or the project, and ask the user for any required value you cannot find. Do not hand a template back to the user unless they ask for a prompt to use elsewhere. Where a step names another `karpathy-*` skill, load it by name or read `../[skill-name]/SKILL.md`; if it is not installed, say so and ask, and do not improvise its procedure.
 
-**Don't ask what the LLM thinks. Ask it to simulate what a diverse group of experts would argue.**
+## When to use
 
-LLMs are trained to please. A direct question gets a sycophantic answer. A simulation request gets a distribution of real perspectives — including the uncomfortable ones.
+- An important decision is about to be made.
+- A plan or draft should be stress-tested before the user commits to it or publishes it.
+- The user asks for counterarguments, a devil's advocate or a pre-mortem.
+- The user wants their own understanding of a concept tested.
 
-Karpathy's method: write a draft → ask LLM to argue the strongest possible opposite position → synthesize a better view.
+## When not to use
 
-## The 4 Simulator Modes
+- A factual question. Answer it, or look it up.
+- Writing code. Use `karpathy-agentic-engineering`.
+- The decision is made and the user needs it carried out.
+- The decision turns on a fact nobody has checked. Check the fact first; a simulation cannot supply it.
 
-### Mode 1: Expert Debate Panel
-Best for: technical decisions, architecture choices, research directions
+## Inputs
 
-```
-Simulate a structured debate between these 3 expert personas on [TOPIC/DECISION]:
+- **The decision, plan or draft**, and the user's current position on it (required).
+- **Stakes and constraints**: what it costs to be wrong, what cannot change.
+- **A mode**, if the user named one. Otherwise choose from the modes below and say which.
 
-Expert A: [most optimistic / pro position]
-Expert B: [most skeptical / con position]  
-Expert C: [pragmatic outsider / unexpected angle]
+## Procedure
 
-For each expert:
-- State their core argument in 3 sentences
-- Cite 2 specific examples or data points they'd use
-- Identify what they'd say is the FATAL FLAW in the opposing view
+### Rules for every mode
 
-After the debate, synthesize: what's the strongest hybrid position that survives all three critiques?
+1. **Say that you are simulating.** The personas are not real experts and their statements are not evidence.
+2. **No invented facts.** Personas argue from reasoning, from facts the user gave, and from facts verified in this session. No made-up statistics, studies or quotations. If an argument depends on a fact you cannot verify, phrase it as a condition and put the fact on the To verify list.
+3. **Do not favour the user.** Judge their position as if it came from a stranger. If it is weak, say so directly.
+4. **Argue each side at full strength.** No hedging inside a persona's argument.
+5. **Do not force a compromise.** The synthesis reports which arguments survived. It may find that one side is right, that a combination is, or that the question cannot be settled until the listed facts are checked.
 
-Topic: [YOUR_TOPIC]
-My current position: [YOUR_DRAFT_VIEW]
-```
+### Mode 1: Panel debate
 
-### Mode 2: Steel Man the Opposite
-Best for: before publishing, before committing to a decision
+For technical choices, product direction, research direction.
 
-```
-I'm about to [ACTION / PUBLISH / DECIDE]:
+Choose 3 to 5 personas whose interests conflict: at least one who gains if the answer is yes, one who carries the cost or the risk, and one outsider. For each persona give:
 
-[YOUR PLAN OR DRAFT]
+- the core argument, in about three sentences;
+- the strongest objection to each opposing view;
+- what would change this persona's mind.
 
-Steel man the strongest possible argument AGAINST this. Be merciless.
-Don't hedge. Don't say "while this has merit...". 
-Argue as if you genuinely believe the opposite and need to convince a skeptical expert.
+### Mode 2: Argue the opposite
 
-Then: what would it take to make my original position survive this attack?
-```
+For the moment before publishing or committing.
 
-### Mode 3: Pre-Mortem Simulation
-Best for: project planning, product launches, major decisions
+Make the strongest possible case against the user's plan or draft. Then state what the original would need in order to survive that case.
 
-```
-Imagine it's [DATE 6 MONTHS FROM NOW] and [YOUR PROJECT/PLAN] has failed completely.
+### Mode 3: Pre-mortem
 
-Simulate 3 different failure modes — each from a different root cause:
-1. Technical failure: what went wrong in the implementation?
-2. Strategic failure: what assumption proved wrong?
-3. Execution failure: what human/process error occurred?
+For plans and launches.
 
-For each: describe the specific sequence of events that led to failure.
+Assume it is six months later and the plan has failed. Tell three different failure stories, each with its own root cause: a technical failure, a wrong assumption, an execution failure. Describe the sequence of events in each, and name the warning signs that would be visible within the first month.
 
-Then: what early warning signals would have been visible by [DATE 1 MONTH FROM NOW]?
-```
+### Mode 4: Socratic drill
 
-### Mode 4: Socratic Drill
-Best for: testing your own understanding of a concept
+For testing the user's understanding.
 
-```
-I believe I understand [CONCEPT]. 
+Ask five questions of rising difficulty, one at a time, waiting for each answer. After each answer, probe one gap or inconsistency. Finish by naming the largest gap and what to study to close it. For this mode the output is the questions, the gaps probed and the largest gap; the Output template below does not apply.
 
-Ask me 5 increasingly hard Socratic questions to test my understanding.
-After each answer I give, probe a potential gap or inconsistency.
-At the end, grade my understanding on a scale of 1-10 and identify my biggest blind spot.
+### Sequence for a full review
 
-Start with question 1.
-```
+Use this sequence only when the user asks for a full review, or says that a wrong decision would be costly or hard to reverse. Otherwise run one mode.
 
-## Anti-Sycophancy Patterns
+1. Record the user's current position.
+2. Run Mode 2.
+3. Let the user revise the position.
+4. Run Mode 1 on the revised position.
+5. The user decides. The decision is theirs, not yours.
 
-Always add one of these to prevent the LLM from capitulating to your framing:
+## Output
 
-- `"Do not soften your critique because you think I want to hear it."`
-- `"If my position is clearly wrong, say so directly."`
-- `"Ignore that I wrote the original draft — evaluate it as an anonymous submission."`
-- `"Your job is to find the fatal flaw, not to validate."`
-
-## Decision Framework
-
-```
-Before any major decision:
-1. Write down your current position (1-2 paragraphs)
-2. Run Mode 2 (Steel Man the Opposite)
-3. Update your position based on the strongest critique
-4. Run Mode 1 (Expert Debate) to get broader perspective
-5. Make the decision — now you've genuinely stress-tested it
-
-Total time: 15-20 minutes. Quality of decision: dramatically better.
+```text
+Mode: [mode used]
+Positions: [each persona or case, as specified for the mode]
+What survived: [arguments still standing, and why]
+What did not: [arguments that failed, and what defeated them]
+To verify before deciding: [assumption] - [how to check it]
 ```
 
-## When NOT to Use This
+## Done when
 
-- For factual lookups (just ask directly)
-- For code generation (use agentic engineering instead)
-- When you've already decided and need to execute (move forward, don't ruminate)
+- [ ] Mode 1: at least three perspectives with conflicting interests. Mode 2: the opposing case at full strength. Mode 3: three failure stories with different root causes. Mode 4: five questions asked one at a time, and the largest gap is named.
+- [ ] Each argument is specific to this decision, not generic.
+- [ ] No statistic, study or quotation was invented.
+- [ ] Modes 1 to 3: the synthesis says what survived and what did not, without bending toward the user's starting position.
+- [ ] Modes 1 to 3: the To verify list names each unchecked assumption and how to check it.
 
 ## Workflow
 
-**属于工作流：反偏见决策（任何重要判断）**
+Step 1 of **Debiased Decision**. Its To verify list goes to `karpathy-understanding-first`, which separates what has been verified from what is still assumed.
 
-| 位置 | 上游 | 下游 |
-|------|------|------|
-| 入口 | 用户面临重要决策时直接触发 | `karpathy-understanding-first`（验证自己是否真正理解） |
+## Source
 
-完整链路：`llm-simulator → understanding-first → system-prompt-learning`
+- Karpathy, 2025-12-07: "Don't think of LLMs as entities but as simulators." Instead of asking for the model's opinion, he suggests asking: "What would be a good group of people to explore xyz? What would they say?" https://x.com/karpathy/status/1997731268969304070
+- Karpathy, 2026-03-28: after an LLM helped him polish an argument for four hours, he asked it to argue the opposite and it convinced him of that too. Models are "extremely competent in arguing almost any direction"; his advice is to "make sure to ask different directions and be careful with the sycophancy". https://x.com/karpathy/status/2037921699824607591
 
-也在月度体检工作流中用于 stress-test 月度结论。
-
-## Prompt Contract
-
-```text
-Simulate a structured debate between 3-5 expert personas with conflicting incentives on <DECISION/TOPIC>. Each persona must: state their core argument, cite specific evidence, identify the fatal flaw in opposing views. After the debate, synthesize the strongest hybrid position that survives all critiques. End with: key assumptions I must verify myself.
-```
-
-## Verification Checklist
-
-- [ ] 至少有 3 个角色，且利益/立场互相冲突
-- [ ] 每个角色都给出了具体论据（不是泛泛而谈）
-- [ ] 每个角色都指出了对方的致命缺陷
-- [ ] 综合结论经受住了所有角色的攻击
-- [ ] 列出了「我必须亲自验证」的假设清单
-- [ ] 没有出现讨好用户原始立场的倾向
+The procedure, templates and thresholds here are this repository's elaboration.

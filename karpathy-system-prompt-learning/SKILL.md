@@ -1,6 +1,6 @@
 ---
 name: karpathy-system-prompt-learning
-description: 'Write explicit strategy into system prompts as a learning mechanism — making LLM behavior more predictable and teachable through prompt-as-textbook approach. Use this skill when the user wants to improve an agent or LLM''s performance on a specific task through system prompts, needs to encode a strategy or workflow into a prompt, wants consistent LLM behavior, or says "improve system prompt", "encode this strategy", "prompt engineering", "make agent follow this workflow", "prompt as textbook". Based on Karpathy system prompt learning post.'
+description: 'Turn a mistake or a hard-won insight into an explicit, reusable strategy written into the instructions an agent reads next time: a system prompt, CLAUDE.md, AGENTS.md or a skill file. Use this skill when an agent keeps repeating a mistake, the user wants a correction to stick, a system prompt is not working, or the user says "improve system prompt", "encode this strategy", "prompt engineering", "make agent follow this workflow", "prompt as textbook".'
 disable-model-invocation: false
 user-invocable: true
 related_skills:
@@ -10,232 +10,107 @@ related_skills:
   - karpathy-practice-environments
 ---
 
-# Skill 13: System Prompt Learning（系统提示学习范式）
+# System Prompt Learning
 
-> Source: https://x.com/karpathy/status/1921368644069765486
-> "System prompt learning — missing LLM learning paradigm"
+When an agent hits a problem and a better approach is worked out, write the lesson down as an explicit strategy in the instructions the agent will read next time. A lesson that lives only in one conversation is gone in the next.
 
-## Core Principle
+**How to use this skill:** You, the agent, carry out the steps below yourself. Text in `[BRACKETS]` is a placeholder: fill it from the conversation or the project, and ask the user for any required value you cannot find. Do not hand a template back to the user unless they ask for a prompt to use elsewhere. Where a step names another `karpathy-*` skill, load it by name or read `../[skill-name]/SKILL.md`; if it is not installed, say so and ask, and do not improvise its procedure.
 
-**The system prompt is a textbook. Write it like one.**
+## When to use
 
-Karpathy's insight: there are three learning modes for LLMs (pretrain, finetune, RL) — but there's a fourth that's massively underused: **system prompt learning**. Explicitly encoding strategy into the system prompt is more sample-efficient than retraining and more reliable than hoping the model figures it out.
+- An agent made the same kind of mistake more than once.
+- The user corrected an approach and wants the correction to last.
+- A decision or debugging session produced a rule worth reusing.
+- An existing system prompt or instruction file is not producing the wanted behaviour.
+- A prompt for a new agent has to be written.
 
-Think of it as writing a textbook for the LLM before each task. Not just instructions — **strategy with reasoning**.
+## When not to use
 
-## The System Prompt Learning Framework
+- A preference that matters only in this conversation.
+- A rule that must hold every single time. Enforce it in code instead: a test, a linter rule, a hook.
+- Facts about the user. This skill records general strategies for solving problems, not personal details.
 
-Good system prompts have three layers (mirroring how humans learn):
+## Inputs
 
-```
-Layer 1: EXPOSITION (pretrain equivalent)
-→ Background knowledge the model needs
-→ Relevant concepts, terminology, context
-→ "Here's what you need to know about [domain]"
+- **The failure or the lesson**, with at least one concrete example of what happened (required for part A).
+- **Where the instructions live**: `CLAUDE.md`, `AGENTS.md`, a skill file, a system prompt. Ask if unknown.
+- **The current text** of those instructions. Read it yourself.
 
-Layer 2: WORKED EXAMPLES (SFT equivalent)  
-→ Step-by-step demonstration of correct behavior
-→ Explicit reasoning traces
-→ "Here's exactly how to handle [situation]"
+## Procedure
 
-Layer 3: STRATEGY (RL equivalent)
-→ Explicit decision rules
-→ Error patterns to avoid
-→ "When you see X, do Y because Z"
-```
+### A. Capture a lesson
 
-## Building a System Prompt from Scratch
+1. **Describe the failure concretely**: the situation that triggers it, what was done, what should have been done. Work from the real example; do not generalise from nothing.
+2. **Find the cause** by reading the existing instructions: missing knowledge, a missing rule, two instructions in conflict, or ambiguous wording. If a rule already covers the case and was ignored, rewrite or move that rule; do not add a second one.
+3. **Write the lesson** in under about 200 words:
 
-```
-Build a system prompt that teaches an LLM to [TASK] reliably.
+   ```text
+   When [specific trigger], do [specific action], because [reason].
+   Not: [the mistake to avoid].
+   Example: [short before -> after]
+   ```
 
-Task description: [WHAT THE LLM SHOULD DO]
-Current failure mode: [HOW IT CURRENTLY GOES WRONG]
-Desired behavior: [EXACTLY WHAT GOOD LOOKS LIKE]
+4. **Check for conflicts** with the existing instructions and resolve them. Never stack contradictory rules.
+5. **Propose the edit**: show the exact text and the file. Write it once the user approves, or straight away if they already asked you to write it. These files change how agents behave in future sessions.
+6. **Test it** in a fresh session or subagent that has only the edited instructions, on the failing case or a similar new one. Applying the lesson yourself in this conversation is not a test, because the correction is already in your context. If you cannot run such a test, say the lesson is untested.
+7. **Keep the file healthy.** A long list of rules gets ignored. If you see duplicates or lessons that look obsolete, list them and propose the merge or deletion alongside the edit in step 5. Change nothing beyond what the user approved.
 
-Structure the system prompt with all three learning layers:
+Example lesson:
 
-Layer 1 — Exposition:
-Write 2-3 paragraphs of background knowledge the LLM needs. 
-Include: key concepts, relevant context, domain vocabulary.
-
-Layer 2 — Worked Examples:
-Write 2 complete examples of the task done correctly.
-Format: INPUT → [step-by-step reasoning] → OUTPUT
-Show the thinking, not just the answer.
-
-Layer 3 — Strategy:
-Write explicit decision rules as IF/THEN/BECAUSE statements.
-Include: common mistakes to avoid, edge cases to handle, quality checks.
-
-End with: "Before responding, verify: [checklist of 3-5 quality checks]"
+```text
+When a test fails after your change, read the full error and the test before
+editing anything, because the first guess is often aimed at the wrong file.
+Not: changing the assertion so that the test passes.
+Example: "expected 3, got 4" -> found an off-by-one in the loop bound, fixed
+the loop, left the test alone.
 ```
 
-## Improving an Existing System Prompt
+### B. Write or repair a whole prompt
 
-When your current system prompt isn't working well:
+Inputs for this part: the agent's task, and real examples of good and bad output from the user. Do not invent domain facts or examples; ask for them.
 
-```
-Diagnose and improve this system prompt.
+Give the prompt three kinds of material, adapted from the textbook analogy (strategies stand in for practice problems):
 
-Current system prompt:
-[PASTE CURRENT PROMPT]
+- **Background**: what the model needs to know and does not: the domain, its vocabulary, the context.
+- **Worked examples**: one to three complete examples with the reasoning shown, including one hard case.
+- **Strategies**: explicit `when / do / because` rules, the mistakes to avoid, and a short checklist to run before answering.
 
-Failure mode I'm seeing:
-[DESCRIBE HOW IT'S GOING WRONG]
+To repair a failing prompt:
 
-Example of bad output:
-[PASTE BAD EXAMPLE]
+1. Collect one bad output and one good output for the same input.
+2. Decide which of the three parts is missing or wrong.
+3. Change one thing.
+4. Retest on the same cases and on one new case.
+5. Keep a version note: what changed, why, and the measured result. Record only results you measured.
 
-Example of good output:
-[PASTE GOOD EXAMPLE]
+## Output
 
-Analysis:
-1. What's missing from the exposition layer? (background knowledge gaps)
-2. What worked examples should I add?
-3. What explicit rules would prevent this failure mode?
-4. Is the prompt too restrictive? Too vague? Wrong framing?
+- The lesson or the revised prompt, as exact text.
+- The file it belongs in, and whether it has been written or is waiting for approval.
+- The test result, or a statement that it was not tested.
 
-Output: improved version of the system prompt with changes annotated.
-```
+## Done when
 
-## Strategy Encoding Templates
-
-### For coding tasks
-```
-SYSTEM PROMPT: [CODING TASK]
-
-You are an expert [LANGUAGE] developer. Follow this exact strategy:
-
-UNDERSTANDING PHASE (always do this first):
-- Restate the task in your own words
-- List all edge cases you can think of
-- Identify the one tricky part
-
-IMPLEMENTATION PHASE:
-- Start with the simplest working version
-- Add complexity only when simple version fails
-- Comment every non-obvious line with WHY
-
-VERIFICATION PHASE (always do this last):
-- Trace through your code with one concrete example
-- Check: does it handle empty input? Large input? Wrong type?
-- Confirm: could a junior dev maintain this?
-
-NEVER:
-- Assume the input is well-formed without checking
-- Add dependencies without saying why
-- Write clever code when simple code works
-```
-
-### For analysis tasks
-```
-SYSTEM PROMPT: [ANALYSIS TASK]
-
-You are an analytical expert. Follow this strategy:
-
-GROUNDING:
-- Always cite specific evidence before making claims
-- Confidence levels: CERTAIN / LIKELY / SPECULATIVE — always label which
-- If you don't know something, say so explicitly
-
-STRUCTURE:
-- Lead with the conclusion, then the evidence
-- One claim per paragraph
-- Maximum 3 levels of nesting
-
-QUALITY CHECKS before responding:
-- [ ] Every claim has evidence?
-- [ ] Confidence levels labeled?
-- [ ] Would an expert in this field agree with this framing?
-- [ ] Am I answering the actual question or a related easier one?
-```
-
-### For creative/writing tasks
-```
-SYSTEM PROMPT: [WRITING TASK]
-
-Writing strategy for this task:
-
-VOICE:
-[Describe the tone, style, what to avoid]
-
-STRUCTURE:
-[Describe the expected output format]
-
-QUALITY STANDARD:
-A response is good when [describe what success looks like].
-A response is bad when [describe common failure modes].
-
-EXAMPLE OF GOOD OUTPUT:
-[Paste one example]
-
-EXAMPLE OF BAD OUTPUT (and why):
-[Paste one example with annotation]
-```
-
-## Prompt Version Control
-
-Track your system prompt iterations like code:
-
-```markdown
-# [PROMPT NAME] — Version History
-
-## v3 (current) — [DATE]
-Change: Added explicit "verification phase" checklist
-Reason: v2 was skipping edge case checking
-Result: Failure rate dropped from ~30% to ~5%
-
-## v2 — [DATE]
-Change: Added worked examples section
-Reason: v1 was too abstract; model wasn't following the strategy
-Result: Moderate improvement
-
-## v1 — [DATE]
-Initial version: [PASTE]
-```
-
-## The Meta-Prompt (write prompts with an LLM)
-
-```
-Help me write a system prompt for this agent.
-
-Agent task: [WHAT IT SHOULD DO]
-I'll be using this with: [CLAUDE / GPT-4 / etc.]
-Critical behavior: [WHAT MUST ALWAYS HAPPEN]
-Failure modes to prevent: [WHAT GOES WRONG WITHOUT GOOD PROMPTING]
-
-Apply the three-layer system prompt learning framework:
-1. Exposition (what the model needs to know)
-2. Worked examples (demonstrate correct behavior)
-3. Strategy rules (explicit IF/THEN/BECAUSE)
-
-Then: suggest 3 variations I could test to find the best version.
-```
+- [ ] The trigger is specific; it does not say `sometimes`.
+- [ ] The action is concrete enough to follow without interpretation.
+- [ ] The mistake to avoid is named.
+- [ ] There is a before and after example.
+- [ ] The lesson is under about 200 words and conflicts with no existing instruction.
+- [ ] It was tested in a fresh session, or the reply says it is untested.
+- [ ] For a whole prompt (part B): one change per revision, retested on the same cases plus one new one, with only measured results recorded.
 
 ## Workflow
 
-**属于工作流：反偏见决策（第3步/终点）**
+Step 3, the last, of **Debiased Decision**. It runs only when the user has made the decision and wants a reusable rule: `When [situation], do [choice], because [verified reason]`. Never record a rule that rests on an item `karpathy-understanding-first` left under Not verified. If there is nothing to record, say so in one line and end. It is also used on its own whenever an agent repeats a mistake.
 
-| 位置 | 上游 | 下游 |
-|------|------|------|
-| 第3步（沉淀） | karpathy-understanding-first（验证后） | 沉淀完成，可复用 |
+## Source
 
-完整链路：llm-simulator → understanding-first → system-prompt-learning
+Karpathy's post of 2025-05-11, proposing system prompt learning as a missing way for LLMs to learn: https://x.com/karpathy/status/1921368644069765486
 
-也在日常开发中独立使用——任何时候 Agent 反复犯同一类错，都应该触发本 Skill。
+- "Pretraining is for knowledge." "Finetuning (SL/RL) is for habitual behavior." Both change the model's weights.
+- Much human learning is closer to writing a note: "It feels more like taking notes for yourself".
+- He argues these strategies should not be handwritten by engineers; the model should accumulate them from experience, "the LLM writing a book for itself on how to solve problems". Part A follows that idea.
+- On 2025-08-27 he described the idea again as "moving the update to tokens/contexts not weights". https://x.com/karpathy/status/1960803117689397543
+- The three-part structure in part B is adapted from his textbook analogy of 2025-01-30 (exposition, worked problems, practice problems), which he drew for training data, not for prompts. https://x.com/karpathy/status/1885026028428681698
 
-## Prompt Contract
-
-```text
-Extract a system prompt lesson from this failure/pattern: <DESCRIBE_THE_RECURRING_ERROR>. Produce: 1) Trigger condition — when does this error occur, 2) Correct strategy — step-by-step what the agent should do instead, 3) Anti-patterns — what specifically to avoid, 4) Worked example — a before/after showing the improvement, 5) Concise instruction block (< 200 words) ready to paste into system prompt or SKILL.md.
-```
-
-## Verification Checklist
-
-- [ ] 触发条件描述具体（不是「有时候」）
-- [ ] 策略是 step-by-step 的（不是模糊建议）
-- [ ] 反模式列出了具体的错误做法
-- [ ] 有 before/after 对比示例
-- [ ] 指令块 < 200 words，可直接粘贴
-- [ ] 在新的测试 case 上验证过指令块有效
+The procedure, templates and thresholds here are this repository's elaboration.

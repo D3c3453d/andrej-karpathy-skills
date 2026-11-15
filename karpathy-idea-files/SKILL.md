@@ -1,6 +1,6 @@
 ---
 name: karpathy-idea-files
-description: 'Create and share ideas as abstract Gist-style specs instead of code — letting agents or others implement. Use this skill when the user wants to capture a new idea quickly, needs to write a project spec for an agent to implement, wants to share a concept without building it first, or says "write up this idea", "create a spec", "gist this", "idea file", "agent can implement this", "brief for this project". Based on Karpathy 27k-like LLM Wiki Gist post and GitHub repo.'
+description: 'Write an idea down as a short spec, an idea file, instead of code, so that an agent or another person can build a version for their own setup. Use this skill when the user wants to capture a new idea quickly, needs a project spec for an agent to implement, wants to share a concept without building it first, or says "write up this idea", "create a spec", "gist this", "idea file", "agent can implement this", "brief for this project".'
 disable-model-invocation: false
 user-invocable: true
 related_skills:
@@ -10,182 +10,104 @@ related_skills:
   - karpathy-llm-wiki
 ---
 
-# Skill 9: Idea Files / Gist-First Sharing（想法文件优先）
+# Idea Files
 
-> Source: https://x.com/karpathy/status/2040470801506541998 | https://github.com/multica-ai/andrej-karpathy-skills
-> "LLM Knowledge Bases idea file" — 27k likes
+Write the idea, not the implementation. An idea file is one Markdown document that explains an idea clearly enough for any capable agent to build a version suited to its owner's setup.
 
-## Core Principle
+**How to use this skill:** You, the agent, carry out the steps below yourself. Text in `[BRACKETS]` is a placeholder: fill it from the conversation or the project, and ask the user for any required value you cannot find. Do not hand a template back to the user unless they ask for a prompt to use elsewhere. Where a step names another `karpathy-*` skill, load it by name or read `../[skill-name]/SKILL.md`; if it is not installed, say so and ask, and do not improvise its procedure.
 
-**Ship the idea, not the implementation.**
+## When to use
 
-Karpathy's Gist pattern: write a clear abstract + success criteria + constraints, then let an agent (or anyone) implement it for their specific context. One idea spec → infinite implementations.
+- The user has a new idea and wants it captured before any code is written.
+- The user needs a brief that an agent can build from.
+- The user wants to share a concept publicly without shipping an implementation.
 
-The old model: write code → share code → others adapt code.
-The Karpathy model: write idea spec → share spec → agents implement for context.
+## When not to use
 
-## The Idea File Template
+- The task is already specified with success criteria. Go straight to `karpathy-agentic-engineering`.
+- The user is reporting a bug or asking for a small change.
 
-Every new idea gets this format before any code is written:
+## Inputs
+
+- **The idea**, in the user's own words (required).
+- **Purpose**: is the file for the user's own agent to build from, or for sharing with others? Ask if it is not clear; it decides how specific the file should be.
+- **Constraints** the user already knows (optional).
+
+## Procedure
+
+1. Restate the idea in two sentences. If you had to guess which problem it solves, confirm with the user before going on.
+2. Fill in the template below. Do not invent decisions. Anything the user has not decided goes under Open questions.
+3. Set the level of detail by purpose:
+   - **For sharing:** keep it abstract. Describe the pattern; leave the stack, directory layout and tooling to the reader's agent.
+   - **For the user's own build:** add concrete constraints and criteria.
+4. Check that every success criterion is something a person or a script could observe.
+5. Save the result as one Markdown file, `ideas/[slug].md` unless the user names another place. Do not write implementation code.
+6. If the user wants it built now, hand the file to `karpathy-agentic-engineering`.
+
+### Template
 
 ```markdown
-# [IDEA NAME]
-> Status: [DRAFT / SPEC / ACTIVE / ARCHIVED]
-> Created: [DATE]
-> Source inspiration: [LINK or "original"]
+# [Idea name]
 
-## Abstract (2-3 sentences)
-What is this? What problem does it solve? Why does it matter?
+## Summary
+[Two or three sentences: what it is, which problem it solves, for whom.]
 
-## The Core Insight
-What's the one non-obvious observation that makes this idea work?
-(If you can't write this, the idea isn't ready yet.)
+## Core insight
+[The one non-obvious observation that makes this work.
+If you cannot write it yet, make it the first open question.]
 
-## Success Criteria
-When is this "done"? List 3-5 verifiable outcomes:
-- [ ] [Observable outcome 1]
-- [ ] [Observable outcome 2]
-- [ ] [Observable outcome 3]
+## How it works
+[The pattern in prose: the main parts and how they interact. No code.]
 
-## Minimal Viable Version
-Describe the simplest possible thing that would prove the concept works.
-(One paragraph. No code yet.)
+## Success criteria
+- [ ] [An observable outcome]
+- [ ] [An observable outcome]
+- [ ] [An observable outcome]
 
-## Constraints
-- Must work with: [tools/stack/dependencies]
-- Must NOT require: [what to avoid]
-- Scale target: [personal use / team / public]
-- Time budget: [hours/days]
+## Smallest useful version
+[One paragraph: the simplest thing that would show the idea works.]
 
-## Open Questions
-Things I don't know yet that matter:
-1. [Question 1]
-2. [Question 2]
+## Constraints (optional)
+- Must: [...]
+- Must not: [...]
+- Out of scope: [...]
 
-## Implementation Notes (optional)
-Hints for whoever (agent or human) implements this:
-- Suggested approach: [rough approach]
-- Key risk: [what might go wrong]
-- Prior art: [similar things that exist]
+## Open questions
+1. [Something not yet decided that affects the build]
 
-## Example Input/Output
-Input: [example]
-Output: [example]
+## Notes for the implementer (optional)
+- Suggested approach: [...]
+- Main risk: [...]
+- Prior art: [only things you have checked exist]
 ```
 
-## Converting a Vague Idea to a Spec
+### Quick capture
 
-When you have a rough idea, use this prompt to crystallize it:
+When the user wants to note an idea in seconds, fill in only Summary, one success criterion and Open questions, and add `Status: draft` under the title.
 
-```
-I have a rough idea I want to turn into an implementation-ready spec.
+## Output
 
-Rough idea: [YOUR VAGUE IDEA IN NATURAL LANGUAGE]
+- The path of the saved file.
+- The open questions that need the user's decision, listed in the reply.
 
-Help me write a proper idea file with:
-1. A precise 2-sentence abstract (what + why)
-2. The core non-obvious insight (the thing that makes it work)
-3. 3-5 verifiable success criteria
-4. The minimal viable version (simplest proof of concept)
-5. 3 things an implementer needs to know
-6. 2 open questions I should resolve before building
+## Done when
 
-Be precise. Remove vagueness. If something is unclear, ask — don't invent.
-```
-
-## The Agent Implementation Prompt
-
-Once you have an idea file, hand it to an agent:
-
-```
-Implement this idea spec for my specific context.
-
-Idea spec:
-[PASTE IDEA FILE]
-
-My context:
-- Environment: [OS, language, tools available]
-- Existing codebase: [describe or paste relevant parts]
-- Constraints: [anything specific to my setup]
-
-Implementation rules:
-1. Follow the success criteria exactly
-2. Start with the minimal viable version
-3. Ask before adding anything not in the spec
-4. Output code + a README explaining how to run it
-5. Flag any open questions from the spec that affect implementation
-```
-
-## Sharing Idea Files
-
-The Karpathy pattern for public sharing:
-
-```
-Polish this idea file for public sharing as a Gist.
-
-[PASTE IDEA FILE]
-
-Requirements:
-- Abstract should be compelling but honest (no hype)
-- Success criteria should be so clear anyone could verify them
-- Implementation notes should be context-independent
-- Add a "Variations" section: 3 different ways someone might implement this differently
-- Add a note: "Implementations welcome — tag me in yours"
-
-Format: clean markdown, no implementation code, pure idea.
-```
-
-## Idea Capture (Quick Mode)
-
-For capturing ideas on the fly (30 seconds):
-
-```
-I have a quick idea: [ONE SENTENCE]
-
-Extract:
-1. Problem solved (1 sentence)
-2. Core mechanism (1 sentence)  
-3. Minimum viable success criterion (1 testable statement)
-4. What I need to figure out before building (top 1-2 questions)
-
-Save as a minimal idea file. I'll flesh it out later.
-```
-
-## Idea File Vault Structure
-
-```
-ideas/
-├── active/         ← being built right now
-│   └── llm-wiki.md
-├── backlog/        ← solid specs, not started
-│   └── autoresearch.md
-├── draft/          ← rough, needs more thinking
-│   └── neural-output.md
-└── archived/       ← built or abandoned, kept for reference
-    └── old-idea.md
-```
+- [ ] The summary says what the idea is and why it matters, without vague aspiration.
+- [ ] Each success criterion is observable.
+- [ ] Nothing the user had not decided was written as if decided.
+- [ ] A reader with no other context could start from this file alone.
+- [ ] The file contains no implementation code.
 
 ## Workflow
 
-**属于工作流：想法到上线（入口）**
+Step 1 of **Idea to Launch**. The finished idea file goes to `karpathy-agentic-engineering`, which uses its summary as the task and its success criteria as the checks.
 
-| 位置 | 上游 | 下游 |
-|------|------|------|
-| 入口（第1步） | 用户有新想法时直接触发 | karpathy-agentic-engineering（开始工程化实现） |
+## Source
 
-完整链路：idea-files → agentic-engineering → minimalism → supply-chain-hygiene → vibe-to-agentic
+- Karpathy introduced the idea file on 2026-04-04: "you just share the idea, then the other person's agent customizes & builds it for your specific needs". https://x.com/karpathy/status/2040470801506541998
+- His own example is the LLM Wiki gist, whose closing note begins: "This document is intentionally abstract. It describes the idea, not a specific implementation." https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f
+- On 2026-04-30 he gave a related example: "install .md skills instead of install .sh scripts". https://x.com/karpathy/status/2049903821095354523
 
-## Prompt Contract
+His gist is free-form prose. The template with success criteria, constraints and open questions is this repository's addition.
 
-```text
-Turn my idea into an idea file. Produce: 1) Abstract (2-3 sentences, what and why), 2) Target user (who benefits), 3) Success criteria (how to know it's done — verifiable), 4) Constraints (budget, tech stack, non-goals), 5) Implementation sketch (steps an agent could follow), 6) Open questions (what I haven't decided yet). Format as a single Markdown file ready to share as a Gist.
-```
-
-## Verification Checklist
-
-- [ ] 想法文件有明确的 Abstract（不是模糊愿景）
-- [ ] 成功标准是可验证的（不是「做得好」）
-- [ ] 约束条件写了「绝对不做什么」
-- [ ] 实现建议足够具体，让不认识你的 Agent 也能开始
-- [ ] Open Questions 列出了你还没决定的部分
-- [ ] 整个文件可以直接发 Gist，不需要额外解释
+The procedure, templates and thresholds here are this repository's elaboration.

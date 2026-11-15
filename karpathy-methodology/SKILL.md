@@ -1,6 +1,6 @@
 ---
 name: karpathy-methodology
-description: 'Apply Andrej Karpathy AI methodology and principles from his 2023-2026 insights. Use this skill when the user wants to apply Karpathy-style thinking, needs guidance on agentic engineering, LLM knowledge bases, minimalist coding, understanding-first principles, or any of the 14 core methodologies distilled from his work. Also triggers on: "karpathy method", "karpathy approach", "karpathy way", "AK style", "like karpathy does", "karpathy principles", or when user asks how Karpathy would approach any programming or AI problem.'
+description: 'Router for the Karpathy-inspired skill pack: picks which of the 14 skills or 4 workflows fits the task and loads it. Use this skill when the user wants a Karpathy-style approach but has not named a specific skill, asks which skill to use, or names one of the workflows (Idea to Launch, Research to Publication, Debiased Decision, Monthly Check-up). Also triggers on: "karpathy method", "karpathy approach", "karpathy way", "AK style", "like karpathy does", "karpathy principles", "which karpathy skill".'
 disable-model-invocation: false
 user-invocable: true
 related_skills:
@@ -11,104 +11,95 @@ related_skills:
   - karpathy-meta-reflection
 ---
 
-# Karpathy Methodology — 14 Core Skills
+# Karpathy Methodology (router)
 
-> Distilled from Andrej Karpathy's most-liked posts on X (2023–2026), his LLM Wiki Gist, and the multica-ai/andrej-karpathy-skills repo.
-> Source: https://x.com/karpathy | https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f
+This skill does no task work itself. It picks the right skill or workflow from this pack and hands over to it. Most tasks need one skill, sometimes two or three. Never load all of them.
 
-This skill is the **master index**. When invoked, either:
-1. Apply the specific sub-methodology relevant to the user's current task, or
-2. Guide the user to the right one from the 14 below.
+**How to use this skill:** You, the agent, carry out the steps below yourself. Text in `[BRACKETS]` is a placeholder: fill it from the conversation or the project, and ask the user for any required value you cannot find. Do not hand a template back to the user unless they ask for a prompt to use elsewhere. Where a step names another `karpathy-*` skill, load it by name or read `../[skill-name]/SKILL.md`; if it is not installed, say so and ask, and do not improvise its procedure.
 
----
+## When to use
 
-## The 14 Methodologies
+- The user asks for a Karpathy-style approach without naming a skill.
+- The user asks which skill fits their task.
+- The user names one of the four workflows listed under Workflow, or asks for a whole chain end to end.
 
-| # | Skill Name | One-line Essence |
-|---|-----------|-----------------|
-| 1 | `karpathy-agentic-engineering` | Orchestrate agents with clear tasks and verifiable success criteria |
-| 2 | `karpathy-llm-wiki` | Let LLM maintain your knowledge base; you do the exploring |
-| 3 | `karpathy-llm-simulator` | Ask LLM to simulate expert debate, not give one opinion |
-| 4 | `karpathy-minimalism` | 200 lines of pure Python beats 50 npm packages |
-| 5 | `karpathy-vibe-to-agentic` | Vibe coding raises the floor; agentic engineering raises the ceiling |
-| 6 | `karpathy-autoresearch` | Agent loops on git branches; you only change the prompt |
-| 7 | `karpathy-output-evolution` | Text → Markdown → HTML → rendered; always demand structure |
-| 8 | `karpathy-understanding-first` | Outsource thinking, never understanding |
-| 9 | `karpathy-idea-files` | Ship the Gist (abstract + criteria), not the code |
-| 10 | `karpathy-meta-reflection` | Monthly audit: what's atrophying, what's exploding |
-| 11 | `karpathy-supply-chain-hygiene` | Every dependency is an attack surface |
-| 12 | `karpathy-education-first` | Make everything teachable; nano-projects over monoliths |
-| 13 | `karpathy-system-prompt-learning` | Write strategy into the system prompt like a textbook |
-| 14 | `karpathy-practice-environments` | Build gyms where agents can try, fail, and learn |
+## When not to use
 
----
+- The user named a specific `karpathy-*` skill. Load that skill directly.
+- The request matches no row in the Skills table. Answer normally; do not force a skill onto it.
 
-## Meta-Principle (the one that unifies all 14)
+## Inputs
 
-> "You can outsource your thinking but you cannot outsource your understanding."
-> — Karpathy, ~46k likes, 2026
+- The user's request (required).
+- If two rows fit equally, ask one question: what result do they want to hold at the end?
 
-Use AI to go faster. Use your brain to know if you're going in the right direction.
+## Procedure
 
----
+1. Match the request to one row of the Skills table.
+   - Choose a workflow only if the user names it or asks for the whole chain end to end.
+   - If the request has two separable parts, run the two skills in the order asked, under the rules of step 5.
+   - If the user only asked which skill fits, name it, say why, and stop.
+   - If no skill fits, say so and answer normally.
+2. Tell the user in one line which you chose and why.
+3. Load it. To load a skill, invoke it by name if your host supports skills. Otherwise read `../[skill-name]/SKILL.md`, relative to this file (the skills are installed side by side). If neither works, say the skill is not installed and ask how to proceed. Do not work from the one-line summary in the table.
+4. Follow the loaded skill's Procedure until its Done when list holds.
+5. For a workflow, run its skills in the listed order:
+   - load each skill when its turn comes (one exception is listed under Workflow);
+   - pass the previous skill's Output to the next skill as its Inputs;
+   - move on only when the current skill's Done when list holds, or the user says to skip it;
+   - if a step has nothing to act on, say so in one line and move on;
+   - tell the user at each handover which step is starting.
 
-## How to Apply This Skill
+### Skills
 
-### Quick Decision Tree
+| Skill | Load when the user wants to |
+|---|---|
+| `karpathy-idea-files` | write an idea down as a spec before any code, or share an idea without an implementation |
+| `karpathy-agentic-engineering` | build or change code they care about, in small reviewed increments; set up CLAUDE.md or AGENTS.md |
+| `karpathy-vibe-to-agentic` | turn a quick prototype into something others can rely on |
+| `karpathy-minimalism` | decide whether a dependency is needed, cut dependencies, or design a tool that agents can use |
+| `karpathy-supply-chain-hygiene` | audit, pin or safely install dependencies; respond to a compromised package |
+| `karpathy-autoresearch` | run an autonomous experiment loop against a metric a script can compute |
+| `karpathy-llm-wiki` | build, feed, query or health-check a Markdown knowledge base |
+| `karpathy-output-evolution` | present a result as HTML, slides or another format suited to its reader |
+| `karpathy-education-first` | teach something: a tutorial, a minimal runnable example, an explanation |
+| `karpathy-llm-simulator` | stress-test a decision, plan or draft by having opposing views argued |
+| `karpathy-understanding-first` | check what in AI-produced work was verified and what they must look at themselves |
+| `karpathy-system-prompt-learning` | stop an agent repeating a mistake by writing the lesson into its instructions |
+| `karpathy-practice-environments` | build tasks with automatic scoring for an agent or a person to practise on |
+| `karpathy-meta-reflection` | review which of their own skills AI is eroding and which it is amplifying |
 
-**"I need to build/code something"**
-→ Start with **#1 Agentic Engineering** (clear task + success criteria), layer in **#4 Minimalism** (avoid bloat), finish with **#8 Understanding First** (verify what was built).
+## Output
 
-**"I need to research/learn something"**
-→ **#2 LLM Wiki** for building knowledge, **#3 LLM Simulator** for challenging assumptions, **#10 Meta-Reflection** for calibrating what to learn next.
+One line naming the chosen skill or workflow and the reason, followed by the output of the loaded skill. After a workflow, add a short summary: each step, what it produced, and any step that was skipped.
 
-**"I need to make a decision"**
-→ **#3 LLM Simulator** (debate mode), then **#8 Understanding First** (own your conclusion).
+## Done when
 
-**"I'm designing a product/tool"**
-→ **#4 Minimalism + Agent-Native**, **#14 Practice Environments**, **#12 Education First**.
+- [ ] One skill, one workflow, or two skills for a two-part request were chosen and named to the user; or the user was asked the single clarifying question; or the user was told that no skill fits.
+- [ ] Every skill used was loaded in full, not applied from its table summary.
+- [ ] Each loaded skill's Done when list holds, or the user chose to skip it.
 
-**"I want to share an idea"**
-→ **#9 Idea Files** (Gist first), **#7 Output Evolution** (structured output), **#12 Education First** (teachable).
+## Workflow
 
-**"I'm doing ML research"**
-→ **#6 AutoResearch**, **#13 System Prompt Learning**, **#14 Practice Environments**.
+The four workflows are defined here and nowhere else. Names in the chains omit the `karpathy-` prefix. A typical request: `Use the Karpathy "Idea to Launch" workflow to ...`
 
----
+| Workflow | Chain and what each step does |
+|---|---|
+| **Idea to Launch** | `idea-files` (write the idea and its success criteria) → `agentic-engineering` (build the first working version in reviewed increments) → `minimalism` (review every dependency the build pulled in) → `supply-chain-hygiene` (audit and pin what remains) → `vibe-to-agentic` (harden against explicit acceptance criteria) |
+| **Research to Publication** | `autoresearch` (run the experiments) → `llm-wiki` (file the findings) → `output-evolution` (render them for the audience) → `education-first` (write the teaching version) |
+| **Debiased Decision** | `llm-simulator` (argue the sides) → `understanding-first` (separate verified from assumed) → `system-prompt-learning` (record the reusable rule) |
+| **Monthly Check-up** | `meta-reflection` (audit the month) → `understanding-first` (find recent work the user cannot explain) → `practice-environments` (set up practice for one skill) → `education-first` (write up what was learned) |
 
-## Master Prompt Template
+Rules that override the listed order:
 
-When the user hasn't specified a sub-methodology, use this all-in-one Karpathy-style framing:
+- **Idea to Launch.** When a new dependency is proposed during the build, load `minimalism` and `supply-chain-hygiene` at that moment; this is the exception to loading in turn. In the last step the idea file's success criteria are the acceptance criteria.
+- **Research to Publication.** `autoresearch` needs a metric a script can compute. For research without one, such as a literature review, skip it and start at `llm-wiki`.
+- **Debiased Decision.** The last step runs only if the user has decided and wants a reusable rule. Never record a rule that rests on an item still marked Not verified.
+- **Monthly Check-up.** The user supplies the tasks and the recent work to examine. Each skill's Workflow section says what it does differently in this chain.
 
-```
-You are operating under the Karpathy Methodology.
+## Source
 
-Core constraints:
-1. UNDERSTAND before outsourcing — never ship what you can't explain
-2. MINIMIZE dependencies — prefer 200-line pure implementations
-3. AGENT-NATIVE outputs — CLI-friendly, markdown-structured, LLM-legible
-4. VERIFIABLE goals — every task must have a testable success criterion
-5. TEACH as you build — outputs should be understandable by a curious beginner
+- The dated list of posts behind every skill is in `references/index.md`, next to this file.
+- The idea that ties the pack together, "you can outsource your thinking but you cannot outsource your understanding", was written by @yacineMTB. Karpathy reposted it on 2026-04-30 as "the quote I've been citing a lot recently": https://x.com/karpathy/status/2049907410303865030
 
-Task: [USER_TASK]
-Success criteria: [WHAT_DONE_LOOKS_LIKE]
-Constraints: [TECH_STACK, SIZE_LIMIT, NO_LIBS]
-```
-
----
-
-## Source Posts (Top by Likes)
-
-1. **145k likes** — Joins Anthropic: https://x.com/karpathy/status/2056753169888334312
-2. **59k likes** — LLM Knowledge Bases: https://x.com/karpathy/status/2039805659525644595
-3. **56k likes** — "Never felt this behind as a programmer": https://x.com/karpathy/status/2004607146781278521
-4. **46k likes** — "Outsource thinking not understanding": https://x.com/karpathy/status/2049907410303865030
-5. **40k likes** — Claude coding notes: https://x.com/karpathy/status/2015883857489522876
-6. **37k likes** — Programming phase shift: https://x.com/karpathy/status/2026731645169185220
-7. **31k likes** — LLM argue the opposite: https://x.com/karpathy/status/2037921699824607591
-8. **28k likes** — AutoResearch project: https://x.com/karpathy/status/2030371219518931079
-9. **28k likes** — litellm supply chain attack: https://x.com/karpathy/status/2036487306585268612
-10. **25k likes** — 243 lines pure Python GPT: https://x.com/karpathy/status/2021694437152157847
-11. **22k likes** — Agent network discussion: https://x.com/karpathy/status/2017442712388309406
-12. **19k likes** — HTML output + I/O evolution: https://x.com/karpathy/status/2053872850101285137
-13. **27k likes** — LLM Wiki Gist version: https://x.com/karpathy/status/2040470801506541998
+The procedure, templates and thresholds here are this repository's elaboration.

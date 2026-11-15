@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # ============================================================
 # Karpathy Skills — Multi-agent installer
-# https://github.com/LearnPrompt/andrej-karpathy-skills
+# https://github.com/D3c3453d/andrej-karpathy-skills
+# English edition of https://github.com/LearnPrompt/andrej-karpathy-skills
 # ============================================================
 
 set -euo pipefail
@@ -34,6 +35,8 @@ Default target:
   codex -> ~/.agents/skills
 
 Install one agent at a time unless you explicitly pass --target all.
+KARPATHY_SKILLS_TARGETS is used only when no --target is given.
+Existing karpathy-* folders in the target directory are replaced.
 EOF
 }
 
@@ -67,7 +70,8 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-if [ -n "${KARPATHY_SKILLS_TARGETS:-}" ]; then
+# --target on the command line takes precedence over the environment variable.
+if [ -z "$TARGETS" ] && [ -n "${KARPATHY_SKILLS_TARGETS:-}" ]; then
   TARGETS="$KARPATHY_SKILLS_TARGETS"
 fi
 
@@ -91,15 +95,28 @@ target_dir_for() {
   esac
 }
 
+ALL_TARGETS="codex codex-native claude openclaw hermes clacky opencode opencode-legacy"
+
+# Expand a comma-separated list; "all" may appear anywhere in it. Each target is listed once.
 expand_targets() {
   local raw="$1"
+  local name
+  local item
+  local out=""
 
-  if [ "$raw" = "all" ]; then
-    echo "codex codex-native claude openclaw hermes clacky opencode opencode-legacy"
-    return
-  fi
+  for name in $(echo "$raw" | tr ',' ' '); do
+    if [ "$name" = "all" ]; then
+      name="$ALL_TARGETS"
+    fi
+    for item in $name; do
+      case " $out " in
+        *" $item "*) ;;
+        *) out="$out $item" ;;
+      esac
+    done
+  done
 
-  echo "$raw" | tr ',' ' '
+  echo "$out"
 }
 
 install_skill_to_dir() {
@@ -112,6 +129,12 @@ install_skill_to_dir() {
   target="$target_root/$skill_name"
 
   if [ ! -f "$skill_dir/SKILL.md" ]; then
+    return
+  fi
+
+  # Never delete the folder we are copying from (the target may link back to this repository).
+  if [ "$target" -ef "$skill_dir" ]; then
+    echo -e "    ${YELLOW}skipped${NC} $skill_name (target is the source folder)"
     return
   fi
 
@@ -147,17 +170,19 @@ fi
 
 TOTAL=0
 DESTINATIONS=0
+TARGET_LIST="$(expand_targets "$TARGETS")"
 
-for target_name in $(expand_targets "$TARGETS"); do
-  if [ -z "$target_name" ]; then
-    continue
-  fi
-
-  if ! target_root="$(target_dir_for "$target_name")"; then
+# Check every target before installing anything.
+for target_name in $TARGET_LIST; do
+  if ! target_dir_for "$target_name" >/dev/null; then
     echo -e "${RED}Unknown target: $target_name${NC}" >&2
     usage
     exit 1
   fi
+done
+
+for target_name in $TARGET_LIST; do
+  target_root="$(target_dir_for "$target_name")"
 
   DESTINATIONS=$((DESTINATIONS + 1))
   echo -e "${CYAN}${target_name}${NC} -> $target_root"
@@ -181,10 +206,10 @@ else
 fi
 
 echo ""
-echo -e "${CYAN}4 workflows are ready:${NC}"
-echo -e "  ${GREEN}想法到上线${NC}: idea-files -> agentic-engineering -> minimalism -> supply-chain-hygiene -> vibe-to-agentic"
-echo -e "  ${BLUE}研究到发布${NC}: autoresearch -> llm-wiki -> output-evolution -> education-first"
-echo -e "  ${YELLOW}反偏见决策${NC}: llm-simulator -> understanding-first -> system-prompt-learning"
-echo -e "  ${CYAN}月度体检${NC}: meta-reflection -> understanding-first -> practice-environments -> education-first"
+echo -e "${CYAN}The 4 workflows:${NC}"
+echo -e "  ${GREEN}Idea to Launch${NC}: idea-files -> agentic-engineering -> minimalism -> supply-chain-hygiene -> vibe-to-agentic"
+echo -e "  ${BLUE}Research to Publication${NC}: autoresearch -> llm-wiki -> output-evolution -> education-first"
+echo -e "  ${YELLOW}Debiased Decision${NC}: llm-simulator -> understanding-first -> system-prompt-learning"
+echo -e "  ${CYAN}Monthly Check-up${NC}: meta-reflection -> understanding-first -> practice-environments -> education-first"
 echo ""
 echo -e "If your agent is already running, restart it or reload skills before testing."

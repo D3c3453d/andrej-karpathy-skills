@@ -1,6 +1,6 @@
 ---
 name: karpathy-output-evolution
-description: 'Upgrade LLM outputs from plain text to structured, rendered formats like HTML, Marp slides, or interactive dashboards. Use this skill when the user wants better-formatted output, needs to convert notes into a presentation, wants HTML output from an LLM, needs slides from a document, or says "make this prettier", "render this", "output as HTML", "make slides from this", "structured output", "Marp", "better format". Based on Karpathy 19k-like HTML output post.'
+description: 'Choose and produce the output format that suits the reader: self-contained HTML or slides for a person viewing results, Markdown or JSON for agents, terminals and version control. Use this skill when the user wants better-formatted output, needs notes turned into a presentation, wants HTML output from an LLM, or says "make this prettier", "render this", "output as HTML", "make slides from this", "structured output", "Marp", "better format".'
 disable-model-invocation: false
 user-invocable: true
 related_skills:
@@ -10,173 +10,117 @@ related_skills:
   - karpathy-idea-files
 ---
 
-# Skill 7: Output Evolution（输出形式进化）
+# Output Evolution
 
-> Source: https://x.com/karpathy/status/2053872850101285137
-> "HTML output + human-AI I/O evolution" — ~19k likes
+Choose the output format by who will read it. A person looking at results takes in visual, structured output faster than a wall of text, so for human readers HTML or slides often beat Markdown. For agents, terminals and files under version control, Markdown or plain data remains the right choice.
 
-## Core Principle
+**How to use this skill:** You, the agent, carry out the steps below yourself. Text in `[BRACKETS]` is a placeholder: fill it from the conversation or the project, and ask the user for any required value you cannot find. Do not hand a template back to the user unless they ask for a prompt to use elsewhere. Where a step names another `karpathy-*` skill, load it by name or read `../[skill-name]/SKILL.md`; if it is not installed, say so and ask, and do not improvise its procedure.
 
-**Text is the lowest form of output. Demand structure.**
+## When to use
 
-Karpathy's progression: `Text → Markdown → HTML → Interactive → (future) Neural`
+- The user asks for HTML, slides, a rendered report or a nicer format.
+- A result will be shared, presented or compared visually.
+- A long result holds tables or comparisons that are hard to read as text.
 
-Every LLM output can be upgraded. A wall of text becomes a rendered document. A list becomes a sortable table. An explanation becomes a slide deck. The information is the same — but legibility and retention multiply.
+## When not to use
 
-## The Output Evolution Ladder
+- A short answer the user will read once in the chat.
+- Output that another program or agent will consume.
+- Files that live as text in a repository, such as a README or docs, unless the user asks.
+- The user has no way to open a browser where they are working.
 
-```
-Level 1: Plain text          ← most common, least useful for complex info
-Level 2: Markdown            ← better, but not rendered in most contexts  
-Level 3: Self-contained HTML ← renders anywhere, no dependencies
-Level 4: Interactive HTML    ← sortable tables, collapsible sections, search
-Level 5: Marp slides         ← presentations, teaching, sharing
-Level 6: Data viz            ← charts, graphs, dashboards
-```
+## Inputs
 
-**Default rule**: Always request at least Level 3 for any output you'll reuse or share.
+- **The content** (required). Its substance must not change.
+- **The reader and where they will view it.** If the user did not say and it is not obvious, pick a format from the table and say which in one line.
+- **A format**, if the user named one.
 
-## Prompt Templates by Output Type
+## Procedure
 
-### HTML Document (Level 3)
-```
-[YOUR CONTENT REQUEST]
+### 1. Choose the format
 
-Output format: A single self-contained HTML file.
-Requirements:
-- All CSS inline or in a <style> block (no external dependencies)
-- Clean, readable typography (use system fonts: -apple-system, sans-serif)
-- Proper heading hierarchy (h1 → h2 → h3)
-- Key terms in <strong>, code in <code> blocks
-- A table of contents at the top if > 3 sections
-- Light/readable color scheme (#f8f9fa background, #212529 text)
+| Reader and use | Format |
+|---|---|
+| Quick answer in a chat | Plain text or Markdown |
+| An agent, a script or a pipeline | Markdown or JSON |
+| A document kept in a repository | Markdown |
+| A person reading a report, summary or comparison | Self-contained HTML |
+| A person who needs to sort or filter data | HTML with a sortable, searchable table |
+| A talk or a lesson | Marp slides |
 
-Start with <!DOCTYPE html> and end with </html>. Nothing else.
-```
+### 2. Build it
 
-### Marp Slides (Level 5)
-```
-[YOUR CONTENT REQUEST]
+**HTML**
 
-Output format: Marp markdown slide deck.
-Requirements:
-- Start with: ---\nmarp: true\ntheme: default\npaginate: true\n---
-- Separate each slide with ---
-- Max 5 bullet points per slide
-- One key concept per slide
-- Speaker notes after each slide (<!-- note: ... -->)
-- First slide: title + author + date
-- Last slide: "Key Takeaways" + 3-5 bullets
+- One file. CSS and JavaScript inline. No external resources (CDNs, web fonts, remote images), so it opens offline.
+- Proper heading order; a table of contents when there are more than three sections.
+- System fonts, a readable line width, usable on a phone.
+- Interactivity uses standard browser APIs only.
+- Escape any text that came from outside (user data, fetched pages) before placing it in the page. Never insert it as raw HTML.
 
-Total slides: [N] (default: one per major concept)
-```
+**Research report (HTML).** Sections in this order: summary; findings (with a confidence level only where the input states one); evidence per finding; open questions; sources with links.
 
-### Interactive HTML Table (Level 4)
-```
-Convert this data to an interactive HTML table:
+**Comparison (HTML).** The input's recommendation at the top, if it has one, then one card or column per option with the same criteria in the same order.
 
-[DATA]
+**Marp slides**
 
-Requirements:
-- Self-contained HTML (CSS + JS inline)
-- Sortable columns (click header to sort)
-- Search/filter box at top
-- Alternating row colors
-- Responsive (works on mobile)
-- Export to CSV button (optional)
+```markdown
+---
+marp: true
+theme: default
+paginate: true
+---
 
-Include only standard browser APIs, no jQuery or external libraries.
+# [Title]
+
+[Author] · [Date]
+
+---
+
+## [One idea per slide]
+
+- [At most five bullets]
+
+<!-- Speaker notes go in an HTML comment like this one. -->
 ```
 
-### Research Summary as HTML Report (Level 3-4)
-```
-[YOUR RESEARCH TOPIC OR NOTES]
+End with a slide of three to five takeaways.
 
-Output: A self-contained HTML research report.
-Structure:
-1. Executive Summary (3 sentences)
-2. Key Findings (bulleted, with confidence levels: HIGH/MED/LOW)  
-3. Evidence (expandable sections, one per finding)
-4. Open Questions
-5. Sources (linked, with one-sentence descriptions)
+### 3. Keep the content faithful
 
-Style: Clean academic report. Background #fff, readable font-size 16px, max-width 800px centered.
-```
+The output carries the same facts, numbers and caveats as the input. Do not add claims to fill a layout, and do not drop a caveat because it spoils one.
 
-### Visual Comparison (Level 4)
-```
-Compare these [OPTIONS/APPROACHES/TOOLS]:
+### 4. Deliver
 
-[LIST OF THINGS TO COMPARE]
-[CRITERIA TO COMPARE ON]
+Save to a file next to the source material, or where the user says, and tell the user its path and how to open it. A Marp file is Markdown: showing it as slides needs Marp (its CLI, or the VS Code or Obsidian plugin), so say that. If you have a way to render it, look at the result before delivering. If not, say it has not been checked visually.
 
-Output: Self-contained HTML comparison page with:
-- Side-by-side card layout (CSS grid)
-- Color-coded ratings (green/yellow/red) for each criterion
-- Summary recommendation at top
-- No external CSS frameworks
-```
+## Output
 
-## The Universal Upgrade Prompt
+One file in the chosen format, its path, and one line saying why that format.
 
-Apply to ANY existing text output to instantly improve it:
+## Done when
 
-```
-Take this content and upgrade it to a self-contained HTML document.
-
-Content:
-[PASTE ANY TEXT OR MARKDOWN]
-
-Upgrade rules:
-1. Structure the content with proper heading hierarchy
-2. Make lists visually distinct (styled bullets or numbered lists)
-3. Put any code in syntax-highlighted <pre><code> blocks
-4. Add a reading time estimate at the top
-5. Make it look like a well-designed blog post
-6. Keep the content identical — only change the format
-
-Output: complete HTML file, nothing else.
-```
-
-## Output Format Selection Guide
-
-| Use Case | Best Format | Command |
-|----------|------------|---------|
-| Quick notes | Markdown | Default |
-| Sharing with non-technical | HTML | "output as HTML" |
-| Presentation | Marp | "make slides" |
-| Data comparison | HTML table | "as comparison table" |
-| Research summary | HTML report | "as research report" |
-| Documentation | Markdown + ToC | "with table of contents" |
-| Learning material | Marp + speaker notes | "as teaching slides" |
-
-## Always Add This to Important Prompts
-
-```
-Output as a self-contained HTML file. No external dependencies.
-Clean design. Renders directly in a browser.
-```
+- [ ] The format matches the reader in the table, or the user's explicit choice.
+- [ ] An HTML file opens with no network access.
+- [ ] The content matches the input: nothing added, no caveat lost.
+- [ ] The structure can be scanned: headings, tables, sections.
+- [ ] The user was told whether the result was checked visually.
 
 ## Workflow
 
-**属于工作流：研究到发布（第3步）**
+Step 3 of **Research to Publication**. It renders the wiki pages from `karpathy-llm-wiki` for their audience and passes the result to `karpathy-education-first`.
 
-| 位置 | 上游 | 下游 |
-|------|------|------|
-| 第3步（包装） | karpathy-llm-wiki（知识沉淀后） | karpathy-education-first（教学化输出） |
+## Source
 
-完整链路：autoresearch → llm-wiki → output-evolution → education-first
+Karpathy's post of 2026-05-11: https://x.com/karpathy/status/2053872850101285137
 
-## Prompt Contract
+- His tip is to ask the model to "structure your response as HTML" and open the file in a browser; he also reports success with slideshows.
+- He expects output to progress from raw text, to Markdown (the current default), to HTML (an early but forming new default), and eventually to interactive neural video, which does not exist yet.
+- His reason: vision is the fastest channel into the human brain.
+- His closing line: "hot tip try ask for HTML".
 
-```text
-Take this content: <RAW_CONTENT>. Choose the best output format from: Markdown table / Marp slides / self-contained HTML / interactive dashboard / diagram. Justify your choice in one sentence. Then produce the complete rendered-ready artifact. Requirements: self-contained (no external deps), renders correctly, structured for scanning not linear reading.
-```
+He also has his knowledge-base agent render "slide shows (Marp format)" (2026-04-02): https://x.com/karpathy/status/2039805659525644595
 
-## Verification Checklist
+The post is about output for people. The rule to keep Markdown or JSON for agents and repositories is this repository's addition.
 
-- [ ] 输出格式匹配使用场景（分享→HTML，演示→Marp，分析→Dashboard）
-- [ ] 文件完全自包含（无外部 CDN/依赖）
-- [ ] 可以直接在浏览器中打开并正确渲染
-- [ ] 结构支持扫读（有标题、表格、分区），不是一坨文字
-- [ ] 移动端也能基本可读
+The procedure, templates and thresholds here are this repository's elaboration.

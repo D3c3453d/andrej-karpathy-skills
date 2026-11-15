@@ -1,6 +1,6 @@
 ---
 name: karpathy-education-first
-description: 'Apply the education-first mindset — make everything you build teachable, create nano-project explanations, write for beginners. Use this skill when the user wants to explain a project to beginners, create a tutorial from code, write documentation that teaches (not just documents), make a concept accessible, or says "make this teachable", "explain like im a beginner", "nano project version", "teaching version", "explain from scratch", "blog post about this". Based on Karpathy 243-line GPT and Eureka Labs posts.'
+description: 'Turn a project or concept into something that teaches: a minimal runnable example, a from-scratch explanation, a tutorial or a blog post. Use this skill when the user wants to explain a project to beginners, create a tutorial from code, write documentation that teaches, make a concept accessible, or says "make this teachable", "explain like im a beginner", "nano project version", "teaching version", "explain from scratch", "blog post about this".'
 disable-model-invocation: false
 user-invocable: true
 related_skills:
@@ -10,182 +10,99 @@ related_skills:
   - karpathy-autoresearch
 ---
 
-# Skill 12: Education-First Mindset（教育至上）
+# Education First
 
-> Source: https://x.com/karpathy/status/2021694437152157847 | https://x.com/karpathy/status/2056753169888334312
-> 243-line pure Python GPT | "education热情不变" even at Anthropic
+Reduce a system to its smallest complete form: minimal code that runs, with an explanation of why each part is there. That is how others learn it, and how the author finds out whether they understand it.
 
-## Core Principle
+**How to use this skill:** You, the agent, carry out the steps below yourself. Text in `[BRACKETS]` is a placeholder: fill it from the conversation or the project, and ask the user for any required value you cannot find. Do not hand a template back to the user unless they ask for a prompt to use elsewhere. Where a step names another `karpathy-*` skill, load it by name or read `../[skill-name]/SKILL.md`; if it is not installed, say so and ask, and do not improvise its procedure.
 
-**If you can't teach it, you don't own it. Make everything a nano-project.**
+## When to use
 
-Karpathy's signature move: take a complex system and reimplement it from scratch in minimal, readable code with maximal explanation. Not for production. For understanding.
+- The user wants a teaching version of something they built.
+- The user wants a concept explained from scratch.
+- The user wants a tutorial, a blog post, or documentation that teaches.
 
-The 243-line GPT wasn't the fastest implementation. It was the most comprehensible implementation. That's the goal.
+## When not to use
 
-## The Teaching Version Prompt
+- Reference documentation that should stay terse.
+- Production code. Do not rewrite it into teaching code; write the teaching version beside it.
+- The user wants only the answer.
 
-After completing any project, generate its teaching version:
+## Inputs
 
-```
-I just built [PROJECT/CONCEPT]. Now create a teaching version of it.
+- **The project or concept** (required).
+- **The audience and what they already know.** If the user does not say, assume a reader who can program but is new to the topic, and state that assumption.
+- **The form**: nano-project, explanation, teaching documentation or blog post. Choose from the request.
 
-[PASTE CODE OR DESCRIBE PROJECT]
+## Procedure
 
-Teaching version requirements:
-1. Target audience: curious beginner who knows [PREREQUISITE LEVEL]
-2. Start with: "Here's what we're building and why it matters" (2 paragraphs)
-3. Walk through the code line-by-line in the most important sections
-4. For every non-obvious decision: add a comment explaining WHY, not just WHAT
-5. Add a "Try this yourself" section at the end with 3 small exercises
-6. Maximum complexity rule: if a beginner would say "wait, what?" — add an explanation
+1. Write the core idea in one sentence. If you cannot, you do not yet understand the material well enough: read more or ask the user.
+2. Produce the chosen form, following its rules below.
+3. Check the result against Done when.
 
-Output: the teaching version as a complete annotated script or tutorial.
-```
+### Nano-project
 
-## The Nano-Project Pattern
+A single file that demonstrates one concept.
 
-Karpathy's approach to making anything understandable:
+- Under about 300 lines; standard library only, unless the concept is itself a library.
+- Complete: it runs from scratch and prints something meaningful.
+- The structure of the code mirrors the structure of the concept.
+- Comments explain why, not what.
+- The file opens with a three-sentence explanation and the command to run it.
+- **Run it before delivering** and include the real output. If you cannot run it, say so.
+- Say what was left out for clarity: efficiency, error handling, edge cases.
+- End with three to five exercises, easy to hard.
 
-```
-Create a nano-project that demonstrates [COMPLEX CONCEPT].
+### Explanation
 
-Rules:
-- Under 200 lines of code (pure Python / stdlib preferred)
-- Zero external dependencies
-- Every line earns its place
-- Annotated: inline comments explain the key insight of each section
-- Complete: runs from scratch, shows meaningful output
-- Pedagogical: the code's structure mirrors the concept's structure
+1. The intuition in one sentence: what the thing is.
+2. The smallest concrete example, with real numbers or code.
+3. Why it matters, in one or two sentences, without hype.
+4. The most common misconception, and how a reader can tell whether they hold it.
+5. Its limits: what it does not do, or what it assumes.
+6. Where to go deeper: only resources you have confirmed exist in this session. Otherwise leave this out.
 
-The concept to demonstrate: [CONCEPT]
-What should the reader understand after running this? [LEARNING GOAL]
+For a research paper, add: what the paper figured out, how, in plain language, and an idea for a nano-project that would teach it.
 
-Also provide:
-- 3-sentence explanation at the top of the file
-- What to try next (3 suggestions for extending it)
-```
+### Teaching documentation
 
-## The "Explain Like Karpathy" Prompt
+Rewrite reference documentation so that it teaches, without changing what it says the software does.
 
-For explaining any technical concept:
+- State the learning goal at the top: `After reading this you can [...]`.
+- Lead with a working example, not with definitions.
+- For each parameter: what it does, when to change it, the default.
+- Add up to three common patterns and up to three common mistakes that the documentation, code, tests or issues actually show. Omit either list if there is nothing real to put in it.
 
-```
-Explain [CONCEPT] the way Karpathy would explain it — clear, direct, minimal jargon, example-first.
+### Blog post
 
-Format:
-1. The one-sentence intuition (what it IS, not what it does)
-2. The simplest possible concrete example (with actual numbers or code)
-3. Why it matters (1-2 sentences, no hype)
-4. The common misconception most people have about it
-5. If you want to go deeper: [3 resources, ordered by accessibility]
+Structure: why this matters now; the one insight; a working example; what did not work; three to five takeaways; what to explore next.
 
-Audience: [DESCRIBE YOUR READER]
-```
+- Be direct and concrete. Prefer exact figures to adjectives.
+- Use only figures, errors and failed attempts that the user provided or that you produced in this session. Never invent a benchmark or an anecdote.
+- Write in the user's voice. Do not write as if Karpathy were the author.
+- End when the content ends.
 
-## Documentation That Teaches
+## Output
 
-Transform technical documentation from reference to tutorial:
+The teaching artefact in the chosen form, saved where the user says or shown in the reply. For a nano-project: the file, the command to run it, and its real output.
 
-```
-Rewrite this documentation to be educational, not just informational.
+## Done when
 
-Current docs:
-[PASTE DOCUMENTATION]
-
-Rewrite rules:
-1. Lead with a concrete example, not with definitions
-2. Explain each parameter with: what it does + why you'd change it + what the default is and why
-3. Add a "Common patterns" section showing 3 real use cases
-4. Add a "Common mistakes" section showing 3 errors people make and how to fix them
-5. Keep all technical accuracy; only improve pedagogical structure
-6. Add: "After reading this, you should be able to [LEARNING GOAL]" at the top
-```
-
-## The Blog Post Generator
-
-For turning any project into a shareable piece of teaching content:
-
-```
-Write a technical blog post about [PROJECT/INSIGHT].
-
-Style: Karpathy-style — direct, precise, example-driven, opinionated.
-
-Structure:
-1. Hook: why does this matter RIGHT NOW? (1-2 punchy sentences)
-2. The core insight: one thing that changes how you think about [topic]
-3. Show, don't tell: working code example that demonstrates the insight
-4. What I tried that didn't work (builds credibility + saves readers time)
-5. What I learned: 3-5 concrete takeaways, actionable
-6. What's next: 2-3 things worth exploring
-
-Tone:
-- First person, direct
-- Specific (exact line counts, benchmark numbers, actual errors)
-- Skeptical of hype, enthusiastic about substance
-- Never say "in conclusion" or "in summary" — just end when you're done
-
-Audience: [WHO WILL READ THIS]
-Length: [~1000 words for blog / ~500 for Twitter thread / ~300 for Gist]
-```
-
-## Making Complex Research Accessible
-
-For distilling papers or research into teachable content:
-
-```
-Distill this [paper/research/concept] into a teachable explainer.
-
-Source: [PASTE ABSTRACT OR KEY SECTIONS]
-
-Output:
-1. ELI5 version: explain to a smart non-expert in 3 sentences
-2. Key insight: what's the one thing this paper figured out?
-3. The method in plain language: how did they do it? (no equations, just logic)
-4. Why it matters: what does this enable that wasn't possible before?
-5. The catch: what are the limitations or assumptions?
-6. Nano-project idea: how could someone understand this by building a tiny version?
-```
-
-## Teaching Code Review Checklist
-
-When reviewing code with education-first lens:
-
-```markdown
-Is this code teachable?
-- [ ] Can a motivated beginner understand what it does in 5 minutes?
-- [ ] Does each function have a comment explaining WHY, not just what?
-- [ ] Are variable names descriptive enough to read like documentation?
-- [ ] Is there a README that explains how to run it from scratch?
-- [ ] Does it have at least one worked example in the comments?
-- [ ] Are the non-obvious parts explained?
-
-If any box is unchecked: the code isn't done yet.
-```
+- [ ] The core idea is stated in one sentence.
+- [ ] Any example code was run and its real output is shown, or the reply says it was not run.
+- [ ] The explanation says why, not only what.
+- [ ] (nano-project) Exercises get harder step by step.
+- [ ] (explanation) The common misconception comes with a way to check for it.
+- [ ] A reader at the stated level can follow the first step without outside help.
+- [ ] No resource, figure or anecdote was invented.
 
 ## Workflow
 
-**属于工作流：研究到发布（终点）+ 工作流：月度体检（终点）**
+The last step of two workflows. In **Research to Publication** it turns the rendered findings from `karpathy-output-evolution` into a teaching version; use the Blog post form unless the user names another. In **Monthly Check-up**, ask the user to explain what they practised in `karpathy-practice-environments`, write it up in the Explanation form from their words, and mark the gaps; explaining it is the test of having learned it.
 
-| 位置 | 上游 | 下游 |
-|------|------|------|
-| B的第4步 | karpathy-output-evolution（包装完成后） | 发布/分享 |
-| D的第4步 | karpathy-practice-environments（练习后） | 教程输出 |
+## Source
 
-研究到发布链路：autoresearch → llm-wiki → output-evolution → education-first
-月度体检链路：meta-reflection → understanding-first → practice-environments → education-first
+- Karpathy's microgpt, 2026-02-11: "Train and inference GPT in 243 lines of pure, dependency-free Python." He adds: "Everything else is just for efficiency." He called it an art project; treating it as a model for teaching, and the 300-line guideline, are this repository's reading. https://x.com/karpathy/status/2021694437152157847
+- On joining Anthropic, 2026-05-19: "I remain deeply passionate about education and plan to resume my work on it in time." https://x.com/karpathy/status/2056753169888334312
 
-## Prompt Contract
-
-```text
-Convert <PROJECT_OR_CONCEPT> into a teaching version for beginners. Produce: 1) Core concept in one sentence, 2) Minimal runnable example (< 300 lines, no hidden deps), 3) Step-by-step walkthrough (explain WHY not just WHAT), 4) 3-5 progressive exercises (easy→hard), 5) Common misconceptions and how to check if you fell into them.
-```
-
-## Verification Checklist
-
-- [ ] 核心概念用一句话能说清
-- [ ] 最小可运行示例确实能跑（< 300 行，无隐藏依赖）
-- [ ] walkthrough 解释了 WHY，不只是 WHAT
-- [ ] 练习题有递进难度
-- [ ] 常见误区有自检方法
-- [ ] 零基础读者能在 5 分钟内理解第一步
+The procedure, templates and thresholds here are this repository's elaboration.

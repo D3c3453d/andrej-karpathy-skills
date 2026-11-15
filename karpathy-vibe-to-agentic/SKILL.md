@@ -1,6 +1,6 @@
 ---
 name: karpathy-vibe-to-agentic
-description: 'Transition from vibe coding (fast prototyping) to agentic engineering (rigorous iteration). Use this skill when the user has a rough prototype and wants to level it up, needs to go from "it kind of works" to production-quality, wants to understand the difference between vibe coding and agentic coding, or says "polish this", "make this production-ready", "level up from prototype", "vibe coded this now what". Based on Karpathy posts 3 and 6.'
+description: 'Take a quickly built, vibe-coded prototype and make it reliable: audit what was actually built, define acceptance criteria, and fix it in small reviewed steps. Use this skill when the user has a rough prototype and wants to level it up, needs to go from "it kind of works" to production quality, or says "polish this", "make this production-ready", "level up from prototype", "vibe coded this now what".'
 disable-model-invocation: false
 user-invocable: true
 related_skills:
@@ -10,155 +10,111 @@ related_skills:
   - karpathy-understanding-first
 ---
 
-# Skill 5: Vibe Coding → Agentic Leap（Vibe编码 → 代理跃迁）
+# From Vibe Coding to Agentic Engineering
 
-> Source: https://x.com/karpathy/status/2004607146781278521 | https://x.com/karpathy/status/2026731645169185220
-> "I've never felt this much behind as a programmer" — 56k likes
+Vibe coding produces a working prototype fast, without anyone reading the code. Before others rely on it, change mode: find out what was actually built, write down what ready means, and fix it one reviewed step at a time.
 
-## Core Principle
+**How to use this skill:** You, the agent, carry out the steps below yourself. Text in `[BRACKETS]` is a placeholder: fill it from the conversation or the project, and ask the user for any required value you cannot find. Do not hand a template back to the user unless they ask for a prompt to use elsewhere. Where a step names another `karpathy-*` skill, load it by name or read `../[skill-name]/SKILL.md`; if it is not installed, say so and ask, and do not improvise its procedure.
 
-**Vibe coding raises the floor. Agentic engineering raises the ceiling.**
+## When to use
 
-They're not the same thing and you need both:
+- A prototype exists and works roughly, and the user now wants to depend on it or ship it.
+- The user asks to polish, harden or productionise something built quickly.
 
-| | Vibe Coding | Agentic Engineering |
-|---|---|---|
-| **Goal** | Fast prototype, explore ideas | Reliable, maintainable, verifiable |
-| **How** | Natural language → run it | Task specs + success criteria + loops |
-| **When** | First 20% (exploration) | Last 80% (execution) |
-| **Risk** | You don't understand what you built | Agent doesn't understand what you want |
-| **Karpathy says** | "raises the floor" | "raises the ceiling" |
+## When not to use
 
-## The Transition Protocol
+- No code exists yet. Use `karpathy-idea-files` or `karpathy-agentic-engineering`.
+- The prototype is a throwaway and will stay one. Leave it alone.
 
-When you have a vibe-coded prototype and need to level it up:
+## Inputs
 
-### Step 1: Audit What You Built
+- **The prototype**: its path, or the code (required).
+- **What ready means**: who will use it, where it will run, what must not go wrong. Ask if unknown; the acceptance criteria depend on it.
 
-```
-I vibe-coded this [project/script/app]. I need to understand what I actually have before leveling it up.
+## Procedure
 
-[PASTE CODE OR DESCRIBE IT]
+### 1. Audit what exists
 
-Please:
-1. Describe exactly what this does in plain English (3-5 sentences)
-2. List every assumption baked in (hardcoded values, expected input format, etc.)
-3. Identify the 3 most likely failure modes
-4. List what's missing for this to be production-ready
-5. What would break if I ran this on a different machine / with different data?
+Read the code. Run it only after reading it, and only if it writes nothing outside its own directory and uses no real credentials or external service; otherwise ask first. Report bluntly:
 
-Be blunt. I'm about to invest more time in this and need to know if it's worth it.
-```
+1. What it does, in three to five sentences.
+2. The assumptions built into it: hardcoded values, expected input formats, the machine it was written on.
+3. The three most likely ways it fails.
+4. What is missing for the intended use.
+5. Whether fixing it is worth more than rewriting it.
 
-### Step 2: Define Success Criteria
+### 2. Check for common prototype defects
 
-```
-Based on this audit of my prototype:
+| Defect | Fix |
+|---|---|
+| Hardcoded credentials, paths, magic numbers | Move to configuration or environment variables |
+| No error handling on file or network operations | Handle the failure with a message that says what went wrong |
+| Debug prints left in | Remove, or replace with logging |
+| Functions doing several unrelated things | Split, but only where a fix needs it |
+| Dependencies not declared in the manifest | Declare and pin them |
+| Steps that only work by hand | Script them |
+| No tests | Add tests for the core behaviour (step 4) |
 
-[AUDIT OUTPUT FROM STEP 1]
+A credential found in the code needs more than deletion. If the code was ever committed, pushed or shared, tell the user the credential must be rotated. Do not print its value in your report.
 
-Help me define clear, verifiable success criteria for the "production-ready" version.
+### 3. Define acceptance criteria
 
-Format each criterion as a testable assertion:
-- GIVEN [input/condition]
-- WHEN [action]
-- THEN [expected output/behavior]
+Write five to seven criteria, most important first, and get the user's agreement:
 
-List 5-7 criteria. Start with the most important.
-```
-
-### Step 3: Agentic Cleanup Loop
-
-```
-You are a senior engineer reviewing this prototype. Your job is to systematically improve it.
-
-Prototype: [CODE]
-Success criteria: [FROM STEP 2]
-
-Work incrementally:
-1. First fix: address the most critical issue only (one diff)
-2. After I approve each fix, suggest the next
-3. Never refactor unrelated code
-4. For each fix, explain: WHAT changed, WHY this matters, RISK of this change
-
-Start with fix #1.
+```text
+GIVEN [input or condition]
+WHEN  [action]
+THEN  [expected result]
 ```
 
-## Common Vibe Coding Smells to Clean Up
+### 4. Pin down current behaviour
 
-```
-Review this vibe-coded project for these specific anti-patterns:
+Before changing anything, add a test or a scripted check for what the prototype does correctly today. Without it you cannot tell whether a later fix broke the core.
 
-[PASTE CODE]
+### 5. Fix in small steps
 
-Check for:
-1. Hardcoded credentials, paths, or magic numbers → suggest config/env vars
-2. No error handling on file I/O or network calls → add try/except with clear messages
-3. print() debugging left in → identify and offer to remove
-4. Functions doing 3+ things → suggest split points
-5. No way to run without human supervision → suggest automation hooks
-6. Dependencies that aren't in requirements.txt / package.json
+1. Take the most critical issue only.
+2. Make one change. Do not refactor unrelated code.
+3. Explain WHAT changed, WHY it matters, and the RISK of the change.
+4. Run the checks from steps 3 and 4 and show the output.
+5. Wait for the user's approval before the next fix, unless they told you to continue on your own.
 
-For each issue found: show the exact line and suggest the minimal fix.
-```
+Stop when the acceptance criteria pass and each defect from step 2 is either fixed or listed as open.
 
-## The Two-Track System
+### Quick upgrade of one small script
 
-Karpathy runs these in parallel:
+When the user wants a single pass over a short script instead of the full procedure:
 
-```
-TRACK A (IDE / Human)          TRACK B (Agent)
-─────────────────────          ───────────────
-- Review diffs                 - Implement incrementally
-- Apply taste/judgment         - Run tests automatically  
-- Verify understanding         - Suggest next steps
-- Commit good work             - Generate options
-- Ask "is this right?"         - Never commit autonomously
-```
+- handle errors with clear messages;
+- make hardcoded values arguments or environment variables, keeping the current values as defaults;
+- replace debug and progress prints with logging, but leave prints that are the script's output;
+- add a `--dry-run` flag if the script changes or deletes anything;
+- keep the behaviour otherwise identical, and show the diff.
 
-Always keep a human in the loop for the taste judgment. Agents are for execution, not for deciding what's worth building.
+For this mode only the last three Done when items apply.
 
-## Quick Upgrade Prompt
+## Output
 
-For fast one-shot upgrade of a simple vibe script:
+The audit, the agreed acceptance criteria, and after each fix: what changed, why, the risk, and the check results. At the end, which criteria pass and what remains.
 
-```
-Upgrade this vibe-coded script to production quality.
+## Done when
 
-[PASTE SCRIPT]
-
-Requirements:
-1. Add proper error handling (no unhandled exceptions)
-2. Make all hardcoded values configurable via CLI args or env vars
-3. Add a --dry-run flag that shows what would happen without doing it
-4. Add basic logging (not print) with timestamps
-5. Keep the core logic identical — only add robustness
-6. Maximum 20% increase in line count
-
-Output the complete upgraded script.
-```
+- [ ] The prototype's built-in assumptions are listed.
+- [ ] Acceptance criteria exist in GIVEN/WHEN/THEN form and the user agreed to them.
+- [ ] Core behaviour was pinned by a test before the first fix, and still passes.
+- [ ] Each fix addressed one issue.
+- [ ] Hardcoded values became configuration; any exposed credential was flagged for rotation.
+- [ ] File and network failures are handled.
 
 ## Workflow
 
-**属于工作流：想法到上线（开发者）**
+Step 5, the last, of **Idea to Launch**. It receives the built and audited project from `karpathy-supply-chain-hygiene` and hardens it for release. In this workflow the idea file's success criteria are the acceptance criteria and the existing tests count as the pinned behaviour; add only what is missing. On its own, it is the entry point when a prototype already exists.
 
-| 位置 | 上游 | 下游 |
-|------|------|------|
-| 第5步（收尾） | karpathy-supply-chain-hygiene（安全审查后） | 部署/交付 |
+## Source
 
-完整链路：idea-files → agentic-engineering → minimalism → supply-chain-hygiene → vibe-to-agentic
+- Karpathy coined vibe coding on 2025-02-02 as a way to "fully give in to the vibes, embrace exponentials, and forget that the code even exists", adding: "It's not too bad for throwaway weekend projects". https://x.com/karpathy/status/1886192184808149383
+- On 2025-04-25 he described the opposite mode for code he cares about, with the emphasis on "keeping a very tight leash". https://x.com/karpathy/status/1915581920022585597
+- On 2026-01-26 he wrote that with code you care about you should watch the agents "like a hawk", with an IDE open beside them. https://x.com/karpathy/status/2015883857489522876
+- The line "vibe coding raised the floor. Agentic engineering raises the ceiling." is Stephanie Zhan's summary of her talk with him, which he quoted on 2026-04-30. https://x.com/karpathy/status/2049903821095354523
 
-## Prompt Contract
-
-```text
-I have a vibe-coded prototype: <PASTE_CODE_OR_DESCRIBE>. Step 1: Audit — describe what it does, list hidden assumptions, identify failure modes, list what's missing for production. Step 2: Define 5-7 verifiable success criteria in GIVEN/WHEN/THEN format. Step 3: Start the agentic cleanup loop — one incremental fix at a time, explain WHAT/WHY/RISK for each.
-```
-
-## Verification Checklist
-
-- [ ] 原型的隐含假设已全部列出
-- [ ] 成功标准已定义为可测试的 GIVEN/WHEN/THEN 格式
-- [ ] 每轮修复只改一个问题
-- [ ] 核心逻辑没有被破坏（功能不变）
-- [ ] 增加了错误处理和日志
-- [ ] 硬编码值已替换为配置项
+The procedure, templates and thresholds here are this repository's elaboration.

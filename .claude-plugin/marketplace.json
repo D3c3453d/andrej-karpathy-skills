@@ -1,16 +1,21 @@
 {
   "name": "andrej-karpathy-skills",
-  "owner": { "name": "LearnPrompt", "url": "https://github.com/LearnPrompt" },
-  "metadata": { "description": "Marketplace hosting the Karpathy-inspired skill pack: 14 working methods distilled from Andrej Karpathy's public posts, plus 1 methodology router. Unofficial curation, not endorsed by Andrej Karpathy." },
+  "owner": { "name": "D3c3453d", "url": "https://github.com/D3c3453d" },
+  "metadata": {
+    "description": "English edition of the Karpathy-inspired skill pack: 14 working methods distilled from Andrej Karpathy's public posts, plus 1 methodology router. Original pack by LearnPrompt. Unofficial curation, not endorsed by Andrej Karpathy."
+  },
   "plugins": [
     {
       "name": "karpathy-skills",
-      "description": "14 Karpathy-inspired working methods + 1 methodology router, distilled from his 2023-2026 public X posts and Gists into executable agent skills: agentic-engineering, vibe-to-agentic, autoresearch, llm-simulator, llm-wiki, minimalism, supply-chain-hygiene, understanding-first, idea-files, output-evolution, education-first, system-prompt-learning, practice-environments, meta-reflection. Every skill cites its original source. Unofficial, not endorsed by Andrej Karpathy.",
+      "description": "14 Karpathy-inspired working methods + 1 methodology router, written as agent-facing procedures and checked against his public posts and gists: agentic-engineering, vibe-to-agentic, autoresearch, llm-simulator, llm-wiki, minimalism, supply-chain-hygiene, understanding-first, idea-files, output-evolution, education-first, system-prompt-learning, practice-environments, meta-reflection. Every skill cites its sources and marks what is this pack's own elaboration. English edition. Unofficial, not endorsed by Andrej Karpathy.",
       "version": "1.0.0",
-      "author": { "name": "LearnPrompt", "url": "https://github.com/LearnPrompt" },
+      "author": {
+        "name": "LearnPrompt",
+        "url": "https://github.com/LearnPrompt"
+      },
       "source": "./",
       "category": "productivity",
-      "homepage": "https://github.com/LearnPrompt/andrej-karpathy-skills",
+      "homepage": "https://github.com/D3c3453d/andrej-karpathy-skills",
       "skills": [
         "./karpathy-methodology",
         "./karpathy-agentic-engineering",

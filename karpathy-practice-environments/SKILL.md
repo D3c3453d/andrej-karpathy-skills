@@ -1,6 +1,6 @@
 ---
 name: karpathy-practice-environments
-description: 'Build practice environments and evaluation gyms where agents can try, fail, and learn from feedback. Use this skill when the user wants to set up automated evaluation for an agent, needs a sandbox for testing LLM capabilities, wants to build a practice gym for skills, needs an RL-style environment for agent improvement, or says "eval environment", "practice gym", "agent sandbox", "automated testing for agents", "RL environment", "agent eval loop". Based on Karpathy LLM Textbook and environments posts.'
+description: 'Build a practice environment: a set of tasks with automatic scoring and feedback, where an agent can be evaluated or a person can practise a skill. Use this skill when the user wants automated evaluation for an agent, a sandbox for testing LLM capabilities, a practice gym for a skill, a curriculum, or says "eval environment", "practice gym", "agent sandbox", "automated testing for agents", "RL environment", "agent eval loop".'
 disable-model-invocation: false
 user-invocable: true
 related_skills:
@@ -10,257 +10,124 @@ related_skills:
   - karpathy-autoresearch
 ---
 
-# Skill 14: LLM Textbook + Practice Environments（LLM教科书 + 练习环境）
+# Practice Environments
 
-> Source: https://x.com/karpathy/status/1885026028428681698 | https://x.com/karpathy/status/1960803117689397543
-> "Take LLMs to school" | "Environments for RL" posts
+Skills are learned by practice with feedback, not by reading alone. A practice environment is a set of tasks with automatic scoring and feedback. It can be used to evaluate an agent, to find where an agent fails, or to give a person deliberate practice.
 
-## Core Principle
+**How to use this skill:** You, the agent, carry out the steps below yourself. Text in `[BRACKETS]` is a placeholder: fill it from the conversation or the project, and ask the user for any required value you cannot find. Do not hand a template back to the user unless they ask for a prompt to use elsewhere. Where a step names another `karpathy-*` skill, load it by name or read `../[skill-name]/SKILL.md`; if it is not installed, say so and ask, and do not improvise its procedure.
 
-**LLMs learn like students. Give them textbooks, worked problems, and practice gyms.**
+## When to use
 
-Karpathy's insight: the missing ingredient in LLM training isn't more parameters — it's **practice environments** where agents can try → fail → see feedback → try again. Like a student who reads theory but also needs problem sets.
+- The user wants an agent's ability at something measured before trusting it.
+- The user wants a repeatable evaluation set for an agent or a prompt.
+- The user wants practice exercises with feedback, for themselves or for others.
 
-Apply this to your agents: build environments where they can practice a skill with automatic scoring, not just generate output into the void.
+## When not to use
 
-## The Three Training Data Types
+- Tasks with no checkable answer, such as open creative work. Use human review.
+- A single question. Just answer it.
 
-Every good learning environment needs all three:
+## Inputs
 
-```
-1. EXPOSITION (pretrain equivalent)
-   → Background knowledge, concepts, context
-   → The "textbook chapter" the agent reads before practicing
-   
-2. WORKED EXAMPLES (SFT equivalent)
-   → Complete input-output pairs with reasoning shown
-   → "Here's a solved problem — learn the pattern"
-   
-3. PRACTICE PROBLEMS with feedback (RL equivalent)
-   → Problems with verifiable correct answers
-   → Automatic scoring so agent knows how it did
-   → Enough variety that memorization doesn't work
-```
+- **The skill**, stated as observable behaviour (required). `Writes SQL that returns the correct rows for a described question` is usable; `better at SQL` is not. Ask until it is specific.
+- **The learner**: an agent or a person.
+- **What counts as correct**, and whether a script can check it.
+- **Current and target level**, if known.
 
-## Building a Practice Gym (General Template)
+## Procedure
 
-For any skill you want an agent to get better at:
+1. **Write the three kinds of material** a textbook has:
+   - Exposition: what the skill is and the concepts behind it, in a few sentences.
+   - Worked examples: two or three solved tasks with the reasoning shown, including one edge case.
+   - Tasks with known answers or checks: at least five practice tasks and at least five held-back tasks, ordered from easy to hard and varied enough that memorising one answer does not help.
+2. **Build the scorer.** Prefer, in this order: a functional check (run the answer and compare results), an exact match, a rubric. A rubric applied by a model is not ground truth: use it only where nothing better exists, and have a person spot-check it.
+3. **Define the feedback** given after each attempt: the score, what was wrong, and one hint. Do not give away the solution while retries remain.
+4. **Hold tasks back.** The held-back tasks stay out of the practice loop and are used only for the final test. Passing tasks that were seen many times proves little.
+5. **Agree the pass mark** with the user before any run. Default: 80% of the held-back tasks.
+6. **Isolate it.** Run attempts in a temporary directory with no credentials in the environment, or ask the user for a sandbox.
+7. **Run the loop**: attempt, score, feedback, retry. Limit retries per task (three is a reasonable default) and record every attempt.
+   - For an agent learner, ask the user for the command that runs that agent in a fresh session, without the answers.
+   - Never attempt tasks you wrote yourself and report the result as a measurement.
+   - If you cannot run the learner, deliver the environment and say that no run took place.
+8. **Make the learning last.** An agent keeps nothing from one session to the next. After the run, write the recurring mistakes into its instructions with `karpathy-system-prompt-learning`, then rerun on the held-back tasks. For a person, list what to practise next.
+
+### Minimal gym (scoring core)
+
+This is only the scoring core. It has no held-back set, retry limit or feedback, and `pass_rate` counts every attempt, retries included. Add those before using it as an environment.
 
 ```python
-#!/usr/bin/env python3
-"""
-Practice Gym for: [SKILL_NAME]
-Karpathy-style RL environment for agent skill development
-"""
+"""Minimal practice gym: generate tasks, score attempts, track progress."""
+from typing import Any, Callable
 
-import json
-import random
-from typing import Callable
+PASS_SCORE = 0.8
+
 
 class PracticeGym:
-    """
-    A practice environment where an agent can repeatedly attempt
-    a task and receive automatic feedback.
-    """
-    
-    def __init__(self, task_generator: Callable, scorer: Callable):
-        self.task_generator = task_generator  # generates new practice problems
-        self.scorer = scorer                   # returns 0.0-1.0 score for an attempt
-        self.history = []
-    
-    def sample_task(self):
-        """Generate a new practice problem."""
+    def __init__(self, task_generator: Callable[[], Any], scorer: Callable[[Any, Any], float]):
+        self.task_generator = task_generator  # returns a new task
+        self.scorer = scorer                  # (task, attempt) -> score from 0.0 to 1.0
+        self.history: list[dict] = []
+
+    def sample_task(self) -> Any:
         return self.task_generator()
-    
-    def evaluate(self, task, attempt):
-        """Score an agent's attempt. Returns dict with score + feedback."""
+
+    def evaluate(self, task: Any, attempt: Any) -> dict:
         score = self.scorer(task, attempt)
-        result = {
-            "task": task,
-            "attempt": attempt,
-            "score": score,
-            "passed": score >= 0.8,
-        }
+        result = {"task": task, "attempt": attempt, "score": score, "passed": score >= PASS_SCORE}
         self.history.append(result)
         return result
-    
-    def summary(self):
-        """Summarize performance across all attempts."""
-        if not self.history:
-            return "No attempts yet."
+
+    def summary(self) -> dict:
         scores = [r["score"] for r in self.history]
+        n = len(scores)
+        if n == 0:
+            return {"total_attempts": 0, "avg_score": None, "pass_rate": None, "trend": "no data"}
+        half = n // 2
+        early, late = sum(scores[:half]), sum(scores[n - half:])  # equal-sized halves
+        trend = "improving" if late > early else "declining" if late < early else "flat"
         return {
-            "total_attempts": len(scores),
-            "avg_score": sum(scores) / len(scores),
-            "pass_rate": sum(1 for s in scores if s >= 0.8) / len(scores),
-            "recent_trend": "improving" if scores[-1] > scores[0] else "declining"
+            "total_attempts": n,
+            "avg_score": sum(scores) / n,
+            "pass_rate": sum(s >= PASS_SCORE for s in scores) / n,
+            "trend": trend,
         }
 ```
 
-## Practice Environment Design Prompt
+### Example rubric, for code generation
 
-Build a practice gym for any skill:
+Use a rubric like this only where a functional check is not possible.
 
-```
-Design a practice environment for training an LLM agent to [SKILL].
+| Score | Meaning |
+|---|---|
+| 1.0 | Correct output, edge cases handled |
+| 0.8 | Correct output, one edge case missed |
+| 0.5 | Core logic right, fails on some inputs |
+| 0.2 | Wrong approach, partly useful |
+| 0.0 | Does not run, or plainly wrong |
 
-Skill description: [WHAT THE AGENT SHOULD GET BETTER AT]
-Current performance: [HOW WELL IT DOES NOW]
-Target performance: [WHAT GOOD LOOKS LIKE]
+## Output
 
-Design the gym with:
+- The environment: exposition, worked examples, practice tasks, held-back tasks, scorer, feedback format.
+- If a run took place: the score per task, the pass rate on held-back tasks, the most common failure, and the lessons written down.
 
-1. TASK GENERATOR
-   - Input format: [what the task looks like]
-   - Variation parameters: [what changes between tasks]
-   - Difficulty levels: [easy / medium / hard criteria]
-   - Example task: [concrete example]
+## Done when
 
-2. SCORER  
-   - What makes an attempt correct? (exact match / rubric / functional test)
-   - Score breakdown: [what earns partial credit]
-   - Automatic vs human evaluation: [which parts can be automated]
-   - Example: good attempt vs bad attempt with scores
-
-3. CURRICULUM
-   - Start: [simplest tasks to build confidence]
-   - Progress: [how to increase difficulty as performance improves]
-   - Mastery criterion: [when is the skill "learned"?]
-
-4. FEEDBACK FORMAT
-   What should the agent receive after each attempt?
-   - Score (0-1)
-   - Specific error: [what went wrong]
-   - Hint for next attempt: [one actionable tip]
-```
-
-## Quick Eval Loop Prompt
-
-For rapidly testing an agent on a set of practice problems:
-
-```
-Run an evaluation loop on this agent capability.
-
-Agent task: [WHAT THE AGENT IS SUPPOSED TO DO]
-
-Test cases:
-1. Input: [test input 1]
-   Expected output: [expected 1]
-   
-2. Input: [test input 2]
-   Expected output: [expected 2]
-   
-3. Input: [test input 3]
-   Expected output: [expected 3]
-
-For each test case:
-1. Attempt the task
-2. Compare to expected output
-3. Score: PASS / PARTIAL / FAIL
-4. Explain the error (if any) in one sentence
-
-Final report:
-- Pass rate: N/3
-- Most common failure mode: [pattern in errors]
-- Suggested improvement: [one specific fix]
-```
-
-## The Curriculum Design Template
-
-Build a structured learning progression:
-
-```
-Design a learning curriculum for an agent to master [SKILL].
-
-Like Karpathy's "take LLMs to school" approach — structure it as:
-
-WEEK 1 — Foundations (exposition):
-- Core concepts to internalize
-- 3-5 worked examples with full reasoning traces
-- Quiz: 5 basic problems with answers
-
-WEEK 2 — Pattern Recognition (practice):
-- 20 practice problems, graduated difficulty
-- Automatic scoring criteria
-- Common error analysis
-
-WEEK 3 — Generalization (RL-style):
-- Novel problems the agent hasn't seen
-- Real-world variants
-- Adversarial examples (edge cases designed to fail)
-
-Mastery test: [describe the final eval that confirms the skill is learned]
-```
-
-## Scoring Rubrics for Common Skills
-
-### Code Generation
-```
-Score 1.0: Correct output, handles edge cases, clean style
-Score 0.8: Correct output, misses 1 edge case
-Score 0.5: Core logic correct, fails on some inputs
-Score 0.2: Wrong approach but partially useful
-Score 0.0: Doesn't compile or clearly wrong
-```
-
-### Reasoning/Analysis
-```
-Score 1.0: Correct conclusion + correct reasoning chain + appropriate confidence
-Score 0.8: Correct conclusion, minor reasoning gap
-Score 0.5: Correct conclusion, wrong reasoning
-Score 0.2: Wrong conclusion but shows relevant knowledge
-Score 0.0: Wrong conclusion, no relevant reasoning
-```
-
-### Following Instructions
-```
-Score 1.0: All instructions followed, output matches spec exactly
-Score 0.8: Minor deviation from spec, intent preserved
-Score 0.5: Core task done, 1-2 instructions ignored
-Score 0.2: Significant departure from instructions
-Score 0.0: Instructions ignored entirely
-```
-
-## Environment-in-a-Gist
-
-Karpathy's pattern: publish the environment spec (not the implementation) so anyone can build their gym:
-
-```
-Write a Gist-style environment spec for [SKILL_GYM].
-
-Format:
-# [GYM_NAME] — Practice Environment Spec
-## What this trains
-## Task format
-## Scoring criteria  
-## Sample task + ideal response
-## Curriculum (3 stages)
-## How to evaluate mastery
-
-This is a spec, not code. Anyone with an LLM should be able to implement it.
-```
+- [ ] The skill is defined as observable behaviour.
+- [ ] The worked examples cover a typical case and an edge case.
+- [ ] Scoring needs no human judgment, or the reply says which part does.
+- [ ] Feedback says what was wrong, not only that something was.
+- [ ] Tasks rise in difficulty, and some were held back for the final test.
+- [ ] Lessons from the run were written down where the learner will see them again, or the reply says that no run took place.
 
 ## Workflow
 
-**属于工作流：月度体检（第3步）**
+Step 3 of **Monthly Check-up**. Here the learner is the user: it takes the weakest area found by `karpathy-understanding-first`, builds practice for that one skill, and hands what the user practised to `karpathy-education-first` to write up.
 
-| 位置 | 上游 | 下游 |
-|------|------|------|
-| 第3步（练习） | karpathy-understanding-first（识别盲区后） | karpathy-education-first（把练习成果教学化） |
+## Source
 
-完整链路：meta-reflection → understanding-first → practice-environments → education-first
+- Karpathy, 2025-01-30: "We have to take the LLMs to school." A textbook has exposition, worked problems and practice problems, matching pretraining, supervised finetuning and reinforcement learning. "They have to read, and they have to practice." https://x.com/karpathy/status/1885026028428681698
+- Karpathy, 2025-08-27: environments let a model act and see outcomes, and serve both training and evaluation; what is needed is "a large, diverse, high quality set of environments, as exercises for the LLM to practice against". He adds a caveat: "I am bullish on environments and agentic interactions but I am bearish on reinforcement learning specifically", and names system prompt learning as one alternative. https://x.com/karpathy/status/1960803117689397543
 
-## Prompt Contract
+Both posts are about models. Applying the idea to a person's practice is this repository's adaptation, as are the pass mark, the retry limit and the held-back set.
 
-```text
-Build a practice environment for <SKILL_OR_CAPABILITY>. Include: 1) Exposition — what this skill is and why it matters (3-5 sentences), 2) Worked examples — 2-3 complete input→output demonstrations, 3) Practice tasks — 5 exercises with increasing difficulty, 4) Automatic grading — for each task define pass/fail criteria that can be checked without human judgment, 5) Retry loop — if failed, what feedback to give and how to adjust difficulty.
-```
-
-## Verification Checklist
-
-- [ ] 练习环境有明确的技能定义（不是模糊的「变强」）
-- [ ] Worked examples 覆盖了典型和边界情况
-- [ ] 评分标准不需要人工判断（自动化）
-- [ ] 失败时有具体反馈（不只是「错了」）
-- [ ] 难度有递进（不是一步到位）
-- [ ] Agent 可以自主重试直到通过
+The procedure, templates and thresholds here are this repository's elaboration.

@@ -1,6 +1,6 @@
 ---
 name: karpathy-autoresearch
-description: 'Set up an autonomous research loop where an agent iterates on experiments, hypotheses, and code on git branches. Use this skill when the user wants to automate ML experiments, set up a research agent that self-improves, needs to run many variations of an experiment without manual intervention, or says "automate experiments", "agent research loop", "self-improving agent", "run hyperparameter search", "autoresearch". Based on Karpathy 28k-like AutoResearch post.'
+description: 'Set up and run an autonomous experiment loop: the human writes the instructions and fixes the metric, the agent changes code, runs it, keeps what improves the metric and repeats without asking. Use this skill when the user wants to automate ML experiments, run many variations of an experiment unattended, optimise a prompt or a benchmark against a measurable score, or says "automate experiments", "agent research loop", "run hyperparameter search", "autoresearch".'
 disable-model-invocation: false
 user-invocable: true
 related_skills:
@@ -10,148 +10,103 @@ related_skills:
   - karpathy-system-prompt-learning
 ---
 
-# Skill 6: AutoResearch（自主研究循环）
+# AutoResearch
 
-> Source: https://x.com/karpathy/status/2030371219518931079
-> "Autoresearch project — agent self-iterates training code" — 28k likes
+An autonomous experiment loop. The human writes the instructions and fixes how success is measured. The agent changes the code, runs it, measures, keeps what improved the metric, discards what did not, and repeats without stopping to ask.
 
-## Core Principle
+**How to use this skill:** You, the agent, carry out the steps below yourself. Text in `[BRACKETS]` is a placeholder: fill it from the conversation or the project, and ask the user for any required value you cannot find. Do not hand a template back to the user unless they ask for a prompt to use elsewhere. Where a step names another `karpathy-*` skill, load it by name or read `../[skill-name]/SKILL.md`; if it is not installed, say so and ask, and do not improvise its procedure.
 
-**You change the prompt. The agent changes everything else.**
+## When to use
 
-The loop: agent reads current state → runs experiment → analyzes results → proposes next iteration → you approve the prompt change → repeat.
+The goal can be expressed as one number that a script computes in bounded time:
 
-You stay in the hypothesis space. Agent stays in the implementation + execution space.
+| Domain | Metric |
+|---|---|
+| ML training | validation loss after a fixed training budget |
+| Prompt optimisation | pass rate on a fixed evaluation set |
+| Code performance | benchmark runtime, with the tests still passing |
 
-## The AutoResearch Architecture
+## When not to use
 
-```
-Human Layer (you):
-  - Define research question
-  - Approve hypothesis changes
-  - Set evaluation metric
-  - Stop when satisfied
+- No script can compute the metric: literature reviews, open exploration, anything needing real users (click rates, usability). Use `karpathy-llm-wiki` to organise that kind of research.
+- A run costs real money or touches production, and no limit has been agreed.
+- The agent could raise the score by editing the evaluation. Separate and protect the evaluation first.
 
-Agent Layer:
-  - Implement current hypothesis
-  - Run experiment (on git branch)
-  - Analyze logs/results
-  - Propose next hypothesis
-  - Never change the research question
-```
+## Inputs
 
-## Setup Prompt (One-Time)
+All are required before the loop starts. Ask for what is missing.
 
-```
-You are AutoResearcher for this project.
+- **Run command**: the command that runs one experiment and prints the metric.
+- **Metric**: one number, and whether lower or higher is better.
+- **Editable scope**: the files you may change. Everything else is read-only, above all the evaluation code and its data.
+- **Run budget**: a fixed time or compute limit per run, so that runs are comparable.
+- **Stop limits**: maximum number of experiments, total time or total cost; or explicitly `until interrupted`.
+- **Ideas** to try or to avoid (optional).
 
-Research question: [WHAT YOU'RE TRYING TO LEARN/OPTIMIZE]
-Evaluation metric: [HOW WE MEASURE SUCCESS — must be a single number]
-Current best result: [BASELINE or "none yet"]
+## Procedure
 
-Constraints:
-- Work on git branches: each experiment gets branch "exp/[short-description]"
-- Never modify main branch
-- Log all results to experiments.jsonl in format: {"id": N, "hypothesis": "...", "metric": value, "notes": "..."}
-- Each iteration: implement → run → log → propose next
+### Setup, with the user
 
-Starting hypothesis: [YOUR FIRST HYPOTHESIS TO TEST]
+1. Before writing anything, check that no tracked file has uncommitted changes: `git status --porcelain --untracked-files=no` must print nothing. If it prints something, stop and ask: the loop discards such changes.
+2. Confirm the inputs and draft `program.md` from them. From here on the file belongs to the human: reread it at the start of every experiment and never edit it.
+3. Create a branch `autoresearch/[tag]` from the current branch, where `[tag]` is today's date (for example `mar5`) unless the user names one. Never run the loop on the main branch.
+4. Create `results.tsv` with the header `commit	metric	status	description` (tab-separated). Add `program.md`, `results.tsv` and `run.log` to `.git/info/exclude`, so that they are never committed and never reset.
+5. Run the unmodified code to record the baseline. Unless the run is deterministic, run it three times; the spread between those runs is the noise.
+6. Show the user the setup and the baseline. Start the loop when they confirm.
 
-Begin iteration 1. Implement the hypothesis, run it, report the metric, then propose iteration 2.
-```
+### The loop, without check-ins
 
-## Per-Iteration Loop Prompt
+1. Reread `program.md`. Choose one idea and change only files in scope. By default make one change per experiment, so the result can be attributed to it. If you run out of ideas, reread the in-scope files, combine earlier near-misses, or try a more radical change.
+2. Stage only the in-scope files, by path, and commit: `git add -- [scope files]`, then `git commit`. Never use `git add -A`, `git commit -a`, `git stash` or `git clean`.
+3. Run with all output sent to a file: `[run command] > run.log 2>&1`. If the command does not stop itself at the budget, wrap it in `timeout`; a run that times out is a crash. Read only the metric line; on failure read the last 50 lines of the log.
+4. Add a row to `results.tsv` with status `keep`, `discard` or `crash`.
+5. Keep the commit if the metric improved by more than the noise, or if it is within the noise and the code got simpler. Otherwise discard it:
+   - run `git status --porcelain --untracked-files=no`; if it shows a change to a tracked file outside the scope, stop and ask, because someone else is editing;
+   - run `git reset --hard [last kept commit]`;
+   - delete only the untracked files that this experiment created.
+6. On a crash: fix a trivial mistake and rerun; if the idea itself is broken, record `crash`, discard as in step 5 and move on.
+7. Go to step 1.
 
-```
-AutoResearcher: Iteration [N]
+A worse result is normal and is never a reason to stop: most experiments fail. Do not pause to ask whether to continue. Stop only when:
 
-Current state:
-- Branch: exp/[current]
-- Metric so far: [RESULTS LOG]
-- Best result: [BEST SO FAR]
+- a stop limit is reached or the user interrupts;
+- three runs in a row crash and you cannot fix the cause;
+- continuing would break a rule below.
 
-Completed last iteration: [WHAT HAPPENED]
-Metric result: [VALUE]
+### Rules
 
-Your tasks this iteration:
-1. Analyze: what does the result tell us about the hypothesis?
-2. Propose: what's the next hypothesis? (one variable change at a time)
-3. Implement: write the code change for this hypothesis
-4. Run: execute and report the metric
-5. Commit: git commit to branch exp/[new-name] with message: "exp: [hypothesis description]"
+- Never modify the evaluation, the metric code or the data.
+- Never add dependencies.
+- Never touch files outside the scope, other branches, or the remote.
+- Never exceed the stop limits.
 
-Constraint: change ONE variable at a time. If last experiment failed, back off to simpler hypothesis.
-```
+### When the loop ends
 
-## Experiment Log Format
+Report the best result and its commit, the table of experiments, what helped and what did not, and what to try next. Add the caveat that every improvement was measured on one metric under one budget.
 
-```jsonl
-{"id": 1, "branch": "exp/baseline", "hypothesis": "default hyperparams", "metric": 0.423, "runtime_s": 45, "notes": "starting point"}
-{"id": 2, "branch": "exp/lr-0.001", "hypothesis": "lower learning rate 0.01→0.001", "metric": 0.451, "runtime_s": 47, "notes": "small improvement, keep lowering?"}
-{"id": 3, "branch": "exp/lr-0.0001", "hypothesis": "lower learning rate 0.001→0.0001", "metric": 0.438, "runtime_s": 46, "notes": "worse than id=2, sweet spot was 0.001"}
-```
+## Output
 
-## Research Summary Prompt (run after N iterations)
+- The branch `autoresearch/[tag]`, whose tip is the best version found.
+- `results.tsv` with one row per experiment, failures included.
+- The final report described above.
 
-```
-Summarize this research session.
+## Done when
 
-Experiment log:
-[PASTE experiments.jsonl]
-
-Produce:
-1. Best configuration found (all hyperparameters/settings)
-2. What we learned (2-3 bullet points about the search space)
-3. What we should try next (top 3 unexplored directions)
-4. A clear hypothesis about WHY the best configuration works
-5. Confidence level: how sure are we this is near-optimal?
-```
-
-## Applying AutoResearch Beyond ML
-
-This pattern works for any iterative optimization:
-
-| Domain | Research Question | Metric |
-|--------|------------------|--------|
-| ML training | Best architecture/hyperparams | Validation loss |
-| Prompt engineering | Best system prompt | Task success rate |
-| Code optimization | Fastest implementation | Runtime (ms) |
-| Content creation | Most engaging format | Click/read rate |
-| Product design | Best UX flow | Task completion rate |
-
-## Safety Rails
-
-```
-AutoResearcher rules (always include):
-- NEVER delete data or commits from previous experiments
-- NEVER modify any file outside the current experiment's scope
-- NEVER run experiments that cost > [COST_LIMIT] without checking
-- ALWAYS commit before starting the next iteration
-- ALWAYS report the metric before proposing the next hypothesis
-- If metric degrades 3 iterations in a row, STOP and ask for guidance
-```
+- [ ] The metric is one number, with a command that prints it.
+- [ ] A baseline was recorded before any change.
+- [ ] Every experiment has a row in `results.tsv`.
+- [ ] All work happened on the experiment branch; the evaluation was not modified.
+- [ ] The loop ended for one of the listed reasons, and the report says which.
 
 ## Workflow
 
-**属于工作流：研究到发布（内容创作者/研究者）**
+Step 1 of **Research to Publication**. Its report and `results.tsv` go to `karpathy-llm-wiki` to be filed. If the research has no computable metric, this step is skipped.
 
-| 位置 | 上游 | 下游 |
-|------|------|------|
-| 入口 | 用户有研究问题时直接触发 | karpathy-llm-wiki（把实验结果沉淀为知识页） |
+## Source
 
-完整链路：autoresearch → llm-wiki → output-evolution → education-first
+- Karpathy's post of 2026-03-07 announcing the autoresearch repository: "the human iterates on the prompt (.md)" and "the AI agent iterates on the training code (.py)". Each run lasts exactly five minutes, and the agent works on a git feature branch. https://x.com/karpathy/status/2030371219518931079
+- The loop follows the repository's `program.md`: a baseline first, a fixed time budget, a read-only evaluation, keep the commit on improvement and reset otherwise, an untracked results file, log output redirected, simpler is better, what to do when ideas run out, and no pausing to ask. https://github.com/karpathy/autoresearch/blob/master/program.md
 
-## Prompt Contract
+The original loop has no end; it runs until interrupted. The stop limits, the three-crash stop, the noise check, the one-change default and the git safety steps are this repository's additions.
 
-```text
-You are AutoResearcher. Research question: <QUESTION>. Evaluation metric: <SINGLE_NUMBER_METRIC>. Current baseline: <VALUE or "none">. Starting hypothesis: <FIRST_HYPOTHESIS>. Work on git branches (exp/<name>). Each iteration: implement → run → log result to experiments.jsonl → analyze → propose next hypothesis (one variable change). Never modify main. Stop and ask if metric degrades 3 iterations in a row.
-```
-
-## Verification Checklist
-
-- [ ] 研究问题有明确的单一评估指标
-- [ ] 每轮实验只改一个变量
-- [ ] 所有结果都记录到 experiments.jsonl
-- [ ] 每轮在独立 git branch 上工作
-- [ ] 人类在方向性变更前被征求意见
-- [ ] 有明确的停止条件（指标连续恶化/达到目标）
+The procedure, templates and thresholds here are this repository's elaboration.
