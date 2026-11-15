@@ -41,7 +41,7 @@ This skill does no task work itself. It picks the right skill or workflow from t
    - If the user only asked which skill fits, name it, say why, and stop.
    - If no skill fits, say so and answer normally.
 2. Tell the user in one line which you chose and why.
-3. Load it. To load a skill, invoke it by name if your host supports skills. Otherwise read `../[skill-name]/SKILL.md`, relative to this file (the skills are installed side by side). If neither works, say the skill is not installed and ask how to proceed. Do not work from the one-line summary in the table.
+3. Load it. To load a skill, invoke it by name if your host supports skills. Installed as a Claude Code plugin, the name is `karpathy-skills:[skill-name]`. Otherwise read `../[skill-name]/SKILL.md`, relative to this file (the skills are installed side by side). If neither works, say the skill is not installed and ask how to proceed. Do not work from the one-line summary in the table.
 4. Follow the loaded skill's Procedure until its Done when list holds.
 5. For a workflow, run its skills in the listed order:
    - load each skill when its turn comes (one exception is listed under Workflow);

@@ -15,6 +15,12 @@
 npx skills add D3c3453d/andrej-karpathy-skills
 ```
 
+**Claude Code plugin** (run inside Claude Code)
+
+```
+/plugin install karpathy-skills --marketplace D3c3453d/andrej-karpathy-skills
+```
+
 </div>
 
 > **Disclaimer.** This is an unofficial study and reorganisation of public posts by [Andrej Karpathy](https://x.com/karpathy). His posts belong to him. The skills are built around observations in those posts; the procedures are this repository's own. It does not speak for him and he has not endorsed it.
@@ -120,7 +126,7 @@ Notes from those tests:
 
 | Agent | How |
 |---|---|
-| **Claude Code** | List the chain explicitly: `/karpathy-idea-files /karpathy-agentic-engineering /karpathy-minimalism /karpathy-supply-chain-hygiene /karpathy-vibe-to-agentic Use the Karpathy "Idea to Launch" workflow to ...` Putting `/karpathy-methodology` first would also give the agent the workflow's order rules; that variant has not been tested. |
+| **Claude Code** | List the chain explicitly: `/karpathy-idea-files /karpathy-agentic-engineering /karpathy-minimalism /karpathy-supply-chain-hygiene /karpathy-vibe-to-agentic Use the Karpathy "Idea to Launch" workflow to ...` Putting `/karpathy-methodology` first would also give the agent the workflow's order rules; that variant has not been tested. If the skills were installed as a plugin, each name is `/karpathy-skills:karpathy-...` instead. |
 | **Codex** | Open the conversation with the request: `Use the Karpathy "Idea to Launch" workflow to ...` |
 | **OpenClaw, OpenCode** | Mention the skill directly, or use the same request as for Codex |
 | **Hermes** | Upstream reports that the bundled-skills feature can load a whole chain from its entry skill. Not re-tested here. |
@@ -321,6 +327,29 @@ A monthly review built on the tasks you actually did: which skills to keep sharp
 ---
 
 ## Install
+
+### Claude Code: as a plugin
+
+This repository is its own plugin marketplace. Inside Claude Code 2.1.275 or later:
+
+```
+/plugin install karpathy-skills --marketplace D3c3453d/andrej-karpathy-skills
+```
+
+On older versions, in two steps:
+
+```
+/plugin marketplace add D3c3453d/andrej-karpathy-skills
+/plugin install karpathy-skills@andrej-karpathy-skills
+```
+
+From a terminal, the same commands start with `claude plugin` in place of `/plugin`.
+
+- All 15 skills are installed together, and Claude Code manages them: `claude plugin update karpathy-skills@andrej-karpathy-skills` fetches a newer release (restart to apply), and `claude plugin uninstall karpathy-skills@andrej-karpathy-skills` removes it.
+- Installed this way, each skill's name carries the plugin prefix, for example `/karpathy-skills:karpathy-methodology`.
+- Use either the plugin or `install.sh --target claude`, not both, or every skill appears twice.
+
+### Any agent: the install script
 
 ```bash
 git clone https://github.com/D3c3453d/andrej-karpathy-skills.git

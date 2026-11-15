@@ -8,7 +8,7 @@
     {
       "name": "karpathy-skills",
       "description": "14 Karpathy-inspired working methods + 1 methodology router, written as agent-facing procedures and checked against his public posts and gists: agentic-engineering, vibe-to-agentic, autoresearch, llm-simulator, llm-wiki, minimalism, supply-chain-hygiene, understanding-first, idea-files, output-evolution, education-first, system-prompt-learning, practice-environments, meta-reflection. Every skill cites its sources and marks what is this pack's own elaboration. English edition. Unofficial, not endorsed by Andrej Karpathy.",
-      "version": "1.0.0",
+      "version": "2.0.0",
       "author": {
         "name": "LearnPrompt",
         "url": "https://github.com/LearnPrompt"
